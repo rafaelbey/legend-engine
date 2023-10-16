@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 package org.finos.legend.engine.plan.execution.authorization;
 
@@ -21,8 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.finos.legend.engine.shared.core.identity.Identity;
 
-@Deprecated
-public interface RelationalMiddleTierConnectionCredentialAuthorizer
+public interface MiddleTierConnectionCredentialAuthorizer
 {
     /*
         Is 'Alice' allowed to use 'credref1' for interactive development ?
@@ -30,7 +28,7 @@ public interface RelationalMiddleTierConnectionCredentialAuthorizer
      */
     CredentialAuthorization evaluate(Identity currentUser, String credentialVaultReference, PlanExecutionAuthorizerInput.ExecutionMode usageContext, String resourceContext, String policyContext) throws Exception;
 
-    @JsonPropertyOrder({"status", "summary", "subject", "vaultReference", "details"})
+    @JsonPropertyOrder({"status","summary","subject","vaultReference","details"})
     class CredentialAuthorization
     {
         public enum Status

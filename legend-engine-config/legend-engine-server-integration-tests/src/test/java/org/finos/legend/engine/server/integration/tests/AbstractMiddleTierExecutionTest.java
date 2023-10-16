@@ -21,7 +21,7 @@ import org.finos.legend.engine.authentication.LegendDefaultDatabaseAuthenticatio
 import org.finos.legend.engine.authentication.LegendDefaultDatabaseAuthenticationFlowProviderConfiguration;
 import org.finos.legend.engine.plan.execution.PlanExecutor;
 import org.finos.legend.engine.plan.execution.authorization.PlanExecutionAuthorizerInput;
-import org.finos.legend.engine.plan.execution.authorization.RelationalMiddleTierConnectionCredentialAuthorizer;
+import org.finos.legend.engine.plan.execution.authorization.MiddleTierConnectionCredentialAuthorizer;
 import org.finos.legend.engine.plan.execution.stores.StoreExecutor;
 import org.finos.legend.engine.plan.execution.stores.inMemory.plugin.InMemory;
 import org.finos.legend.engine.plan.execution.stores.relational.config.RelationalExecutionConfiguration;
@@ -141,7 +141,7 @@ public class AbstractMiddleTierExecutionTest
         return executor;
     }
 
-    public static class AlwaysAllowCredentialAuthorizer implements RelationalMiddleTierConnectionCredentialAuthorizer
+    public static class AlwaysAllowCredentialAuthorizer implements MiddleTierConnectionCredentialAuthorizer
     {
         @Override
         public CredentialAuthorization evaluate(Identity currentUser, String credentialVaultReference, PlanExecutionAuthorizerInput.ExecutionMode usageContext, String resourceContext, String policyContext) throws Exception
@@ -150,7 +150,7 @@ public class AbstractMiddleTierExecutionTest
         }
     }
 
-    public static class AlwaysDenyCredentialAuthorizer implements RelationalMiddleTierConnectionCredentialAuthorizer
+    public static class AlwaysDenyCredentialAuthorizer implements MiddleTierConnectionCredentialAuthorizer
     {
         @Override
         public CredentialAuthorization evaluate(Identity currentUser, String credentialVaultReference, PlanExecutionAuthorizerInput.ExecutionMode usageContext, String resourceContext, String policyContext) throws Exception

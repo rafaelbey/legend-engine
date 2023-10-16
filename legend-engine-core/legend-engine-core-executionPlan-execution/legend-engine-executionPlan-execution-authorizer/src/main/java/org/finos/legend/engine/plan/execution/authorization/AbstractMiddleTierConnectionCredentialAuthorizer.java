@@ -1,4 +1,4 @@
-// Copyright 2021 Goldman Sachs
+// Copyright 2023 Goldman Sachs
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,16 +18,12 @@ import org.finos.legend.engine.shared.core.identity.Identity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Deprecated
-public abstract class AbstractRelationalMiddleTierConnectionCredentialAuthorizer implements RelationalMiddleTierConnectionCredentialAuthorizer
+public abstract class AbstractMiddleTierConnectionCredentialAuthorizer implements MiddleTierConnectionCredentialAuthorizer
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRelationalMiddleTierConnectionCredentialAuthorizer.class);
-
     @Override
     public CredentialAuthorization evaluate(Identity subject, String credentialVaultReference, PlanExecutionAuthorizerInput.ExecutionMode usageContext, String resourceContext, String policyContext) throws Exception
     {
-        CredentialAuthorization credentialAuthorization = this.evaluateImpl(subject, credentialVaultReference, usageContext, resourceContext, policyContext);
-        return credentialAuthorization;
+        return this.evaluateImpl(subject, credentialVaultReference, usageContext, resourceContext, policyContext);
     }
 
     public abstract CredentialAuthorization evaluateImpl(Identity subject, String credentialVaultReference, PlanExecutionAuthorizerInput.ExecutionMode usageContext, String resourceContext, String policyContext) throws Exception;

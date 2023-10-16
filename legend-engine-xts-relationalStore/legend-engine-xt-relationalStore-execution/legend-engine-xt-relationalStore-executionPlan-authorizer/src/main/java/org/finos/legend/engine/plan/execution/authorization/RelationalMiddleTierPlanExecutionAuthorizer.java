@@ -15,6 +15,7 @@
 package org.finos.legend.engine.plan.execution.authorization;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.stream.Collectors;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.list.MutableList;
@@ -34,8 +35,6 @@ import org.finos.legend.engine.shared.core.identity.Identity;
 import org.finos.legend.engine.shared.core.identity.credential.middletier.MiddleTierUserPasswordCredential;
 import org.finos.legend.engine.shared.core.vault.Vault;
 
-import java.util.stream.Collectors;
-
 import static org.finos.legend.engine.plan.execution.authorization.PlanExecutionAuthorizerInput.ExecutionMode.INTERACTIVE_EXECUTION;
 import static org.finos.legend.engine.plan.execution.authorization.PlanExecutionAuthorizerInput.ExecutionMode.SERVICE_EXECUTION;
 
@@ -43,13 +42,28 @@ public class RelationalMiddleTierPlanExecutionAuthorizer implements PlanExecutio
 {
     public static final String DATABASE_PREFIX = "DB";
 
-    private RelationalMiddleTierConnectionCredentialAuthorizer relationalMiddleTierConnectionCredentialAuthorizer;
+    private final MiddleTierConnectionCredentialAuthorizer middleTierConnectionCredentialAuthorizer;
 
     private static final String AUTHORIZER_NAME = RelationalMiddleTierPlanExecutionAuthorizer.class.getSimpleName();
 
+    @Deprecated
     public RelationalMiddleTierPlanExecutionAuthorizer(RelationalMiddleTierConnectionCredentialAuthorizer relationalMiddleTierConnectionCredentialAuthorizer)
     {
-        this.relationalMiddleTierConnectionCredentialAuthorizer = relationalMiddleTierConnectionCredentialAuthorizer;
+        this((MiddleTierConnectionCredentialAuthorizer) (currentUser, credentialVaultReference, usageContext, resourceContext, policyContext) ->
+        {
+            RelationalMiddleTierConnectionCredentialAuthorizer.CredentialAuthorization res = relationalMiddleTierConnectionCredentialAuthorizer.evaluate(currentUser, credentialVaultReference, usageContext, resourceContext, policyContext);
+            return new MiddleTierConnectionCredentialAuthorizer.CredentialAuthorization(
+                    res.getSubject(),
+                    res.getVaultReference(),
+                    MiddleTierConnectionCredentialAuthorizer.CredentialAuthorization.Status.valueOf(res.getStatus().name()),
+                    res.getDetails()
+            );
+        });
+    }
+
+    public RelationalMiddleTierPlanExecutionAuthorizer(MiddleTierConnectionCredentialAuthorizer middleTierConnectionCredentialAuthorizer)
+    {
+        this.middleTierConnectionCredentialAuthorizer = middleTierConnectionCredentialAuthorizer;
     }
 
     @Override
@@ -62,7 +76,7 @@ public class RelationalMiddleTierPlanExecutionAuthorizer implements PlanExecutio
     {
         if (executionPlan instanceof SingleExecutionPlan)
         {
-            return evaluateSingleExecutionPlan(identity, (SingleExecutionPlan)executionPlan, authorizationInput);
+            return evaluateSingleExecutionPlan(identity, (SingleExecutionPlan) executionPlan, authorizationInput);
         }
         else
         {
@@ -130,7 +144,7 @@ public class RelationalMiddleTierPlanExecutionAuthorizer implements PlanExecutio
     public static String normalizeServiceResourceContext(String servicePath, String serviceUniqueId)
     {
         String normalizedResourceContext = String.format("id@%s@%s", serviceUniqueId, servicePath)
-                 // ':' separates tokens in the id
+                // ':' separates tokens in the id
                 .replaceAll(":", "_")
                 // '/' slashes in the service pattern
                 .replaceAll("/", "_")
@@ -146,7 +160,7 @@ public class RelationalMiddleTierPlanExecutionAuthorizer implements PlanExecutio
 
         for (RelationalDatabaseConnection relationalDatabaseConnection : nodesWithMiddleTierConnections)
         {
-            MiddleTierUserNamePasswordAuthenticationStrategy middleTierAuthNode = (MiddleTierUserNamePasswordAuthenticationStrategy)relationalDatabaseConnection.authenticationStrategy;
+            MiddleTierUserNamePasswordAuthenticationStrategy middleTierAuthNode = (MiddleTierUserNamePasswordAuthenticationStrategy) relationalDatabaseConnection.authenticationStrategy;
             String normalizedResourceContext = this.resolveDatabaseContext(relationalDatabaseConnection);
             authorizations.add(this.evaluateCredentialAuthorization(identity, normalizedResourceContext, INTERACTIVE_EXECUTION, middleTierAuthNode));
         }
@@ -190,7 +204,7 @@ public class RelationalMiddleTierPlanExecutionAuthorizer implements PlanExecutio
         String vaultReference = authNode.vaultReference;
         String policyContext = this.resolvePolicyContext(authNode);
 
-        RelationalMiddleTierConnectionCredentialAuthorizer.CredentialAuthorization credentialAuthorization = relationalMiddleTierConnectionCredentialAuthorizer.evaluate(identity, vaultReference, executionMode, resourceContext, policyContext);
+        MiddleTierConnectionCredentialAuthorizer.CredentialAuthorization credentialAuthorization = middleTierConnectionCredentialAuthorizer.evaluate(identity, vaultReference, executionMode, resourceContext, policyContext);
 
         ExecutionAuthorization.Builder builder = ExecutionAuthorization.withSubject(identity.getName())
                 .withResource(Maps.immutable.of("credential", vaultReference))
