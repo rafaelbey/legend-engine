@@ -34,17 +34,20 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Warmup;
 
 public class PureModelBenchmark
 {
     @Benchmark
     @Fork(
+            value = 2,
             jvmArgsPrepend = {
                     "-Dlogback.configurationFile=logback.xml",
                     // todo this needs to be pass directly to VM
                     "-Djmh.separateClasspathJAR=true"
             }
     )
+    @Warmup(iterations = 3)
     @BenchmarkMode(value = {Mode.AverageTime})
     public PureModel compile(CompilerBenchmarkInput input)
     {
@@ -57,7 +60,7 @@ public class PureModelBenchmark
         private PureModelContextData pmcd;
         @Param({"1", "2", "4", "8", "16", "64", "128"})
         private int pmcdCount;
-        @Param({"32"})
+        @Param({"1"})
         private int parallelism;
 
         private transient PureModelProcessParameter processParameter;
@@ -85,6 +88,23 @@ public class PureModelBenchmark
         {
             System.out.println("\n\n" + this.processParameter.getForkJoinPool() + "\n\n");
             this.processParameter.getForkJoinPool().shutdown();
+        }
+    }
+
+    public static void main(String... args) throws IOException
+    {
+        CompilerBenchmarkInput compilerBenchmarkInput = new CompilerBenchmarkInput();
+        compilerBenchmarkInput.parallelism = 1;
+        compilerBenchmarkInput.pmcdCount = 1;
+        compilerBenchmarkInput.setup();
+
+        PureModelBenchmark pureModelBenchmark = new PureModelBenchmark();
+
+        while (true)
+        {
+            long time = System.currentTimeMillis();
+            pureModelBenchmark.compile(compilerBenchmarkInput);
+            System.out.println("Time: " + (System.currentTimeMillis() - time) + "ms");
         }
     }
 }

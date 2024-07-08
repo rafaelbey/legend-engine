@@ -110,6 +110,7 @@ public class PackageableElementSecondPassBuilder implements PackageableElementVi
                 {
                     throw new EngineException("Invalid supertype: '" + srcClass.name + "' cannot extend '" + superType + "' as it is not a class.", srcClass.sourceInformation, EngineErrorType.COMPILATION);
                 }
+                // todo
                 synchronized (superTypeClass)
                 {
                     superTypeClass._specializationsAdd(g);
@@ -163,6 +164,7 @@ public class PackageableElementSecondPassBuilder implements PackageableElementVi
         org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.function.property.Property<Object, Object> property1 = HelperModelBuilder.processProperty(this.context, this.context.pureModel.getGenericTypeFromIndex(property1Ref), association).valueOf(srcAssociation.properties.get(0));
         org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.function.property.Property<Object, Object> property2 = HelperModelBuilder.processProperty(this.context, this.context.pureModel.getGenericTypeFromIndex(property0Ref), association).valueOf(srcAssociation.properties.get(1));
 
+        // todo
         synchronized (source)
         {
             source._propertiesFromAssociationsAdd(property2);
@@ -185,6 +187,7 @@ public class PackageableElementSecondPassBuilder implements PackageableElementVi
         qualifiedProperties.forEach(q ->
         {
             org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.Class _class = q._genericType()._rawType() == source ? target : source;
+            // todo
             synchronized (_class)
             {
                 _class._qualifiedPropertiesFromAssociationsAdd(q);
