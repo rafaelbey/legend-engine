@@ -22,6 +22,7 @@ import org.finos.legend.engine.protocol.pure.v1.model.context.PackageableElement
 import org.finos.legend.engine.protocol.pure.v1.model.packageableElement.store.relational.connection.postprocessor.Mapper;
 import org.finos.legend.engine.protocol.pure.v1.model.packageableElement.store.relational.connection.postprocessor.MapperPostProcessor;
 import org.finos.legend.engine.protocol.pure.v1.model.packageableElement.store.relational.connection.postprocessor.RelationalMapperPostProcessor;
+import org.finos.legend.engine.protocol.pure.v1.model.packageableElement.store.relational.model.Database;
 import org.finos.legend.pure.generated.*;
 
 import java.util.List;
@@ -54,7 +55,10 @@ public class HelperRelationalDatabaseConnectionBuilder
             }
             catch (RuntimeException e)
             {
-                context.pureModel.storesIndex.putIfAbsent(element, new Root_meta_relational_metamodel_Database_Impl(element)._name(element));
+                Database db = new Database();
+                db.name = element;
+                db._package = "";
+                new PackageableElementFirstPassBuilder(context).visit(db);
             }
         }
     }
