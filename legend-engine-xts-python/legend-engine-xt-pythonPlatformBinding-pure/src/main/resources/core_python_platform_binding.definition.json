@@ -8,7 +8,6 @@
     "platform_dsl_mapping",
     "platform_dsl_graph",
     "core_functions",
-    "core",
-    "core_java_platform_binding"
+    "core"
   ]
 }
