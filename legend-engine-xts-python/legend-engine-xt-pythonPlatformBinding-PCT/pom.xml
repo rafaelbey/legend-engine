@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- Copyright 2024 Goldman Sachs
+ Copyright 2025 Goldman Sachs
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -169,6 +169,7 @@
         <dependency>
             <groupId>org.finos.legend.engine</groupId>
             <artifactId>legend-engine-xt-pythonPlatformBinding-pure</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- TEST -->

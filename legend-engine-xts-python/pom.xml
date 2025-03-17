@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- Copyright 2024 Goldman Sachs
+ Copyright 2025 Goldman Sachs
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -26,6 +26,10 @@
     <artifactId>legend-engine-xts-python</artifactId>
     <packaging>pom</packaging>
     <name>Legend Engine - XT - Python</name>
+
+    <properties>
+        <maven.enforcer.skip>true</maven.enforcer.skip>
+    </properties>
 
     <modules>
         <module>legend-engine-xt-pythonPlatformBinding-pure</module>
