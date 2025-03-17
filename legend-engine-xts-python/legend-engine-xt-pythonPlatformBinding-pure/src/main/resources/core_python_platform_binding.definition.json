@@ -1,0 +1,14 @@
+{
+  "name": "core_python_platform_binding",
+  "group": "platform",
+  "package": "meta::pure::executionPlan::platformBinding::legendPython",
+  "dependencies": [
+    "platform",
+    "platform_functions",
+    "platform_dsl_mapping",
+    "platform_dsl_graph",
+    "core_functions",
+    "core",
+    "core_java_platform_binding"
+  ]
+}
