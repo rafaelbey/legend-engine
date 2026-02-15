@@ -19,7 +19,7 @@ import org.testcontainers.utility.DockerImageName;
 
 public class PostgresTestContainerWrapper
 {
-    public PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer(DockerImageName.parse("postgres").withTag("9.6.12"));
+    public PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer(DockerImageName.parse("postgres").withTag("16.10"));
 
     public static PostgresTestContainerWrapper build()
     {
