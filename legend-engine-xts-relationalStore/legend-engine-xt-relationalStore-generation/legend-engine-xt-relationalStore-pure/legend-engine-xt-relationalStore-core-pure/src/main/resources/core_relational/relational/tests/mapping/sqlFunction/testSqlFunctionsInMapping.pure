@@ -194,42 +194,42 @@ function <<test.Test>> meta::relational::tests::mapping::sqlFunction::round::tes
 {
     let result = execute(|SqlFunctionDemo.all()->project([s | $s.float1Round ], ['round']), testMapping, testDataTypeMappingRuntime(), meta::relational::extension::relationalExtensions());
     assertEquals([1,2], $result.values->at(0).rows.values);
-    assertEquals('select cast(round("root".float1) as bigint) as "round" from dataTable as "root"',$result->sqlRemoveFormatting());
+    assertEquals('select cast(round("root".float1) as BigInt) as "round" from dataTable as "root"',$result->sqlRemoveFormatting());
 }
 
 function <<test.Test>> meta::relational::tests::mapping::sqlFunction::round::testFilter():Boolean[1]
 {
     let result = execute(|SqlFunctionDemo.all()->filter(s | $s.float1Round == 1)->project([s | $s.float1Round], ['round']), testMapping, testDataTypeMappingRuntime(), meta::relational::extension::relationalExtensions());
     assertEquals([1], $result.values->at(0).rows.values);
-    assertEquals('select cast(round("root".float1) as bigint) as "round" from dataTable as "root" where cast(round("root".float1) as bigint) = 1',$result->sqlRemoveFormatting());
+    assertEquals('select cast(round("root".float1) as BigInt) as "round" from dataTable as "root" where cast(round("root".float1) as BigInt) = 1',$result->sqlRemoveFormatting());
 }
 
 function <<test.Test>> meta::relational::tests::mapping::sqlFunction::ceiling::testProject():Boolean[1]
 {
     let result = execute(|SqlFunctionDemo.all()->project([s | $s.float1Ceiling ], ['ceiling']), testMapping, testDataTypeMappingRuntime(), meta::relational::extension::relationalExtensions());
     assertEquals([2,2], $result.values->at(0).rows.values);
-    assertEquals('select cast(cast(ceiling("root".float1) as numeric) as bigint) as "ceiling" from dataTable as "root"',$result->sqlRemoveFormatting());
+    assertEquals('select cast(cast(ceiling("root".float1) as numeric) as BigInt) as "ceiling" from dataTable as "root"',$result->sqlRemoveFormatting());
 }
 
 function <<test.Test>> meta::relational::tests::mapping::sqlFunction::ceiling::testFilter():Boolean[1]
 {
     let result = execute(|SqlFunctionDemo.all()->filter(s | $s.float1Ceiling == 2)->project([s | $s.float1Ceiling], ['ceiling']), testMapping, testDataTypeMappingRuntime(), meta::relational::extension::relationalExtensions());
     assertEquals([2,2], $result.values->at(0).rows.values);
-    assertEquals('select cast(cast(ceiling("root".float1) as numeric) as bigint) as "ceiling" from dataTable as "root" where cast(cast(ceiling("root".float1) as numeric) as bigint) = 2',$result->sqlRemoveFormatting());
+    assertEquals('select cast(cast(ceiling("root".float1) as numeric) as BigInt) as "ceiling" from dataTable as "root" where cast(cast(ceiling("root".float1) as numeric) as BigInt) = 2',$result->sqlRemoveFormatting());
 }
 
 function <<test.Test>> meta::relational::tests::mapping::sqlFunction::floor::testProject():Boolean[1]
 {
     let result = execute(|SqlFunctionDemo.all()->project([s | $s.float1Floor ], ['floor']), testMapping, testDataTypeMappingRuntime(), meta::relational::extension::relationalExtensions());
     assertEquals([1,1], $result.values->at(0).rows.values);
-    assertEquals('select cast(cast(floor("root".float1) as numeric) as bigint) as "floor" from dataTable as "root"',$result->sqlRemoveFormatting());
+    assertEquals('select cast(cast(floor("root".float1) as numeric) as BigInt) as "floor" from dataTable as "root"',$result->sqlRemoveFormatting());
 }
 
 function <<test.Test>> meta::relational::tests::mapping::sqlFunction::floor::testFilter():Boolean[1]
 {
     let result = execute(|SqlFunctionDemo.all()->filter(s | $s.float1Floor == 1)->project([s | $s.float1Floor], ['floor']), testMapping, testDataTypeMappingRuntime(), meta::relational::extension::relationalExtensions());
     assertEquals([1,1], $result.values->at(0).rows.values);
-    assertEquals('select cast(cast(floor("root".float1) as numeric) as bigint) as "floor" from dataTable as "root" where cast(cast(floor("root".float1) as numeric) as bigint) = 1',$result->sqlRemoveFormatting());
+    assertEquals('select cast(cast(floor("root".float1) as numeric) as BigInt) as "floor" from dataTable as "root" where cast(cast(floor("root".float1) as numeric) as BigInt) = 1',$result->sqlRemoveFormatting());
 }
 
 function <<test.Test>> meta::relational::tests::mapping::sqlFunction::stddev::sample::testProject():Boolean[1]
