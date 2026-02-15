@@ -34,6 +34,7 @@ import org.finos.legend.pure.m3.navigation.PackageableElement.PackageableElement
 import org.finos.legend.pure.m3.navigation.generictype.GenericType;
 import org.finos.legend.pure.m4.ModelRepository;
 import org.finos.legend.pure.m4.coreinstance.CoreInstance;
+import org.finos.legend.pure.m4.coreinstance.primitive.date.PureDate;
 import org.finos.legend.pure.runtime.java.extension.external.variant.VariantInstanceImpl;
 import org.finos.legend.pure.runtime.java.interpreted.ExecutionSupport;
 import org.finos.legend.pure.runtime.java.interpreted.FunctionExecutionInterpreted;
@@ -179,6 +180,17 @@ public abstract class AbstractTo extends NativeFunction
                 return this.repository.newDecimalCoreInstance(jsonNode.textValue());
             }
         }
+        else if (targetRawType == processorSupport.package_getByUserPath(M3Paths.Number))
+        {
+            if (jsonNode.isIntegralNumber())
+            {
+                return this.repository.newIntegerCoreInstance(jsonNode.longValue());
+            }
+            if (jsonNode.isFloatingPointNumber())
+            {
+                return this.repository.newDecimalCoreInstance(jsonNode.decimalValue());
+            }
+        }
         else if (targetRawType == processorSupport.package_getByUserPath(M3Paths.StrictDate))
         {
             if (jsonNode.isTextual())
@@ -191,6 +203,13 @@ public abstract class AbstractTo extends NativeFunction
             if (jsonNode.isTextual())
             {
                 return this.repository.newDateTimeCoreInstance(jsonNode.textValue());
+            }
+        }
+        else if (targetRawType == processorSupport.package_getByUserPath(M3Paths.Date))
+        {
+            if (jsonNode.isTextual())
+            {
+                return this.repository.newDateCoreInstance(jsonNode.textValue());
             }
         }
         else if (targetRawType == processorSupport.package_getByUserPath(M3Paths.String))
@@ -231,6 +250,6 @@ public abstract class AbstractTo extends NativeFunction
             }
         }
 
-        throw new PureExecutionException(functionExpressionCallStack.peek().getSourceInformation(), GenericType.print(targetGenericType, processorSupport) + " is not managed yet!", functionExpressionCallStack);
+        throw new PureExecutionException(functionExpressionCallStack.peek().getSourceInformation(), GenericType.print(targetGenericType, processorSupport) + " is not managed yet! Value: " + jsonNode, functionExpressionCallStack);
     }
 }

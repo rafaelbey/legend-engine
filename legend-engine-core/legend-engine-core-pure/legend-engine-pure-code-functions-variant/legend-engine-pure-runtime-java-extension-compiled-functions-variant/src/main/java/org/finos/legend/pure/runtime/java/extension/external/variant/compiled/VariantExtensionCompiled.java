@@ -17,11 +17,7 @@ package org.finos.legend.pure.runtime.java.extension.external.variant.compiled;
 import org.eclipse.collections.api.factory.Lists;
 import org.finos.legend.pure.runtime.java.compiled.extension.CompiledExtension;
 import org.finos.legend.pure.runtime.java.compiled.generation.processors.natives.Native;
-import org.finos.legend.pure.runtime.java.extension.external.variant.compiled.natives.FromJson;
-import org.finos.legend.pure.runtime.java.extension.external.variant.compiled.natives.To;
-import org.finos.legend.pure.runtime.java.extension.external.variant.compiled.natives.ToJson;
-import org.finos.legend.pure.runtime.java.extension.external.variant.compiled.natives.ToMany;
-import org.finos.legend.pure.runtime.java.extension.external.variant.compiled.natives.ToVariant;
+import org.finos.legend.pure.runtime.java.extension.external.variant.compiled.natives.*;
 
 import java.util.List;
 
@@ -35,7 +31,9 @@ public class VariantExtensionCompiled implements CompiledExtension
                 new ToJson(),
                 new ToMany(),
                 new FromJson(),
-                new ToVariant()
+                new ToVariant(),
+                new IsObject(),
+                new IsArray()
         );
     }
 

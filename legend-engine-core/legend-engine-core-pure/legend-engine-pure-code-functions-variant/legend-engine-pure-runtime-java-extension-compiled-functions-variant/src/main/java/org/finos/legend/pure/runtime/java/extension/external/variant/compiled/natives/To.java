@@ -250,6 +250,10 @@ public class To extends AbstractNative
 
                 throw new PureExecutionException(sourceInformation, "DateTime must include time information, got: " + jsonNode.asText());
             }
+            else if (pureGenericType._rawType() == es.getProcessorSupport().package_getByUserPath(M3Paths.Date))
+            {
+                return DateFunctions.parsePureDate(jsonNode.asText());
+            }
             else if (pureGenericType._rawType() == es.getProcessorSupport().package_getByUserPath(M3Paths.Integer))
             {
                 if (jsonNode.isIntegralNumber())
@@ -281,6 +285,17 @@ public class To extends AbstractNative
                 else if (jsonNode.isTextual())
                 {
                     return new BigDecimal(jsonNode.asText());
+                }
+            }
+            else if (pureGenericType._rawType() == es.getProcessorSupport().package_getByUserPath(M3Paths.Number))
+            {
+                if (jsonNode.isIntegralNumber())
+                {
+                    return jsonNode.longValue();
+                }
+                if (jsonNode.isFloatingPointNumber())
+                {
+                    return jsonNode.decimalValue();
                 }
             }
             else if (pureGenericType._rawType() == es.getProcessorSupport().package_getByUserPath(M3Paths.Boolean))
@@ -316,6 +331,6 @@ public class To extends AbstractNative
             throw new PureExecutionException(sourceInformation, e.getMessage(), e);
         }
 
-        throw new PureExecutionException(sourceInformation, GenericType.print(pureGenericType, es.getProcessorSupport()) + " is not managed yet!");
+        throw new PureExecutionException(sourceInformation, GenericType.print(pureGenericType, es.getProcessorSupport()) + " is not managed yet! Value: " + jsonNode);
     }
 }

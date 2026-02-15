@@ -21,6 +21,8 @@ import org.finos.legend.pure.runtime.java.extension.external.variant.interpreted
 import org.finos.legend.pure.runtime.java.extension.external.variant.interpreted.natives.ToJson;
 import org.finos.legend.pure.runtime.java.extension.external.variant.interpreted.natives.ToMany;
 import org.finos.legend.pure.runtime.java.extension.external.variant.interpreted.natives.ToVariant;
+import org.finos.legend.pure.runtime.java.extension.external.variant.interpreted.natives.IsObject;
+import org.finos.legend.pure.runtime.java.extension.external.variant.interpreted.natives.IsArray;
 import org.finos.legend.pure.runtime.java.interpreted.extension.BaseInterpretedExtension;
 
 public class VariantExtensionInterpreted extends BaseInterpretedExtension
@@ -34,7 +36,9 @@ public class VariantExtensionInterpreted extends BaseInterpretedExtension
                         Tuples.pair("to_Variant_$0_1$__T_$0_1$__String_1__Pair_MANY__T_$0_1$_", To::new),
                         Tuples.pair("toMany_Variant_$0_1$__T_$0_1$__T_MANY_", ToMany::new),
                         Tuples.pair("toMany_Variant_$0_1$__T_$0_1$__String_1__Pair_MANY__T_MANY_", ToMany::new),
-                        Tuples.pair("toVariant_Any_MANY__Variant_1_", ToVariant::new)
+                        Tuples.pair("toVariant_Any_MANY__Variant_1_", ToVariant::new),
+                        Tuples.pair("isArray_Variant_$0_1$__Boolean_1_", IsArray::new),
+                        Tuples.pair("isObject_Variant_$0_1$__Boolean_1_", IsObject::new)
                 )
         );
     }
