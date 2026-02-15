@@ -104,7 +104,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testR
 {
    let result = toSQLString(|Person.all()->project([p | round($p.age->toOne() / 100)], ['round']),
                               simpleRelationalMapping, DatabaseType.Postgres, postgresExtensions());
-   assertEquals('select round((((1.0 * "root".AGE) / 100))::numeric, 0) as "round" from personTable as "root"', $result);
+   assertEquals('select cast(round((((1.0 * "root".AGE) / 100))::numeric, 0) as BIGINT) as "round" from personTable as "root"', $result);
 }
 
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testRoundToDecimalsPostgres():Boolean[1]
