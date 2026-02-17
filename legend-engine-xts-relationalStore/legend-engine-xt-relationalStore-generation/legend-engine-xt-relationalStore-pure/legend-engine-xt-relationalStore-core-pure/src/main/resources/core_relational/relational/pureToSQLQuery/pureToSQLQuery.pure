@@ -4658,11 +4658,7 @@ function meta::relational::functions::pureToSqlQuery::toVariantFriendlyValue(col
   $cols->unwrapAlias()->match([
     l: Literal[1] | $toList->eval($l->filter(v | !$v.value->instanceOf(SQLNull))),  
     df: DynaFunction[1] | 
-      if ($df.name == 'cast' && $df.parameters->last()->toOne()->type()->in([
-                    meta::relational::metamodel::datatype::SemiStructured,
-                    meta::relational::metamodel::datatype::Object, 
-                    meta::relational::metamodel::datatype::Array
-                  ]), | $df, | $toList->eval($df)),  
+      if ($df.name == 'cast' && $df.parameters->head()->toOne()->instanceOf(Literal), | $toList->eval($df), | $df),  
     c: RelationalOperationElement[1] | $c,
     a: RelationalOperationElement[*] | $toList->eval($a)
   ]);

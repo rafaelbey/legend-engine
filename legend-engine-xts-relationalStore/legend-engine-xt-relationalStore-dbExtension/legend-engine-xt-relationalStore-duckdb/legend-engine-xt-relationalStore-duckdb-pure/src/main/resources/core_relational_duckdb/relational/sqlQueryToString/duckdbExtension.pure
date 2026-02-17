@@ -215,6 +215,8 @@ function <<access.private>> meta::relational::functions::sqlQueryToString::duckD
     dynaFnToSql('month',                  $allStates,            ^ToSql(format='month(%s)')),
     dynaFnToSql('monthNumber',            $allStates,            ^ToSql(format='month(%s)')),
     dynaFnToSql('monthName',              $allStates,            ^ToSql(format='monthname(%s)')),
+    dynaFnToSql('floor',                  $allStates,            ^ToSql(format='cast(floor(%s) as BIGINT)')),
+    dynaFnToSql('ceiling',                $allStates,            ^ToSql(format='cast(ceiling(%s) as BIGINT)')),
     // dynaFnToSql('mostRecentDayOfWeek',    $allStates,            ^ToSql(format='date_add(DAY, case when %s - DAY_OF_WEEK(%s) > 0 then %s - DAY_OF_WEEK(%s) - 7 else %s - DAY_OF_WEEK(%s) end, %s)', transform={p:String[1..2] | $p->formatMostRecentH2('current_date()')}, parametersWithinWhenClause = [false, false])),
     dynaFnToSql('now',                    $allStates,            ^ToSql(format='cast(now() as timestamp)')),
     // dynaFnToSql('parseDate',              $allStates,            ^ToSql(format='parsedatetime(%s,%s)')),
@@ -312,7 +314,7 @@ function <<access.private>> meta::relational::functions::sqlQueryToString::duckD
 function <<access.private>> meta::relational::functions::sqlQueryToString::duckDB::transformRegexpLike(params:String[3]):String[1]
 {
   let flags = $params->at(2)->regexpParametersToPatternFlagsForDuckDB();  
-  $params->at(0)->enableEscapeSequence() + ', ' + if ($flags->contains('m'), | 'case when %s like \'^%s\' then \'(\' || replace(%s, \'^\', \'\\\\n\') || \')|(\' || %s || \')\' else %s end'->format([$params->at(1), '%', $params->at(1), $params->at(1), $params->at(1)]), |$params->at(1)) + ', ' + $flags;
+  $params->at(0) + ', ' + if ($flags->contains('m'), | 'replace(%s, %s, %s)'->format([$params->at(1), '\'^\'', '\'(^|\\n)\'']), |$params->at(1)) + ', ' + $flags;
 }
 
 function <<access.private>> meta::relational::functions::sqlQueryToString::duckDB::transformRegexpReplace(params:String[5]):String[1]
@@ -338,12 +340,7 @@ function <<access.private>> meta::relational::functions::sqlQueryToString::duckD
 
 function <<access.private>> meta::relational::functions::sqlQueryToString::duckDB::enableEscapeSequence(originalString:String[1]):String[1]
 {
-  $originalString
-    ->replace('\b', '\\b')
-    ->replace('\n', '\\n')
-    ->replace('\r', '\\r')
-    ->replace('\t', '\\t')
-    ->replace('\f', '\\f');  
+    $originalString;
 }
 
 function <<access.private>> meta::relational::functions::sqlQueryToString::duckDB::regexpParametersToPatternFlagsForDuckDB(regexpParametersAsString: String[1]): String[1]
@@ -377,9 +374,9 @@ function <<access.private>> meta::relational::functions::sqlQueryToString::duckD
 
 function <<access.private>> meta::relational::functions::sqlQueryToString::duckDB::processDateDiffDurationUnitForDuckDB(durationUnit:String[1]):String[1]
 {
-   let durationEnumNames = [DurationUnit.YEARS,DurationUnit.MONTHS,DurationUnit.WEEKS,DurationUnit.DAYS,DurationUnit.HOURS,DurationUnit.MINUTES,DurationUnit.SECONDS,DurationUnit.MILLISECONDS]->map(e|$e->toString());
-   let durationDbNames = ['year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond'];
-   $durationEnumNames->zip($durationDbNames)->filter(h | $h.first == $durationUnit).second->toOne();
+   let durationEnumNames = [DurationUnit.YEARS,DurationUnit.MONTHS,DurationUnit.WEEKS,DurationUnit.DAYS,DurationUnit.HOURS,DurationUnit.MINUTES,DurationUnit.SECONDS,DurationUnit.MILLISECONDS,DurationUnit.MICROSECONDS]->map(e|$e->toString());
+   let durationDbNames = ['year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microseconds'];
+   $durationEnumNames->zip($durationDbNames)->filter(h | $h.first == $durationUnit).second->toOne('Time unit not supported in DuckDb: ' + $durationUnit);
 }
 
 function meta::relational::functions::sqlQueryToString::duckDB::constructIntervalFunction(unit:String[1], i:String[1]):String[1]
@@ -396,7 +393,7 @@ function meta::relational::functions::sqlQueryToString::duckDB::constructInterva
       pair(DurationUnit.SECONDS->toString(), 'to_seconds'),
       pair(DurationUnit.MILLISECONDS->toString(), 'to_milliseconds'),
       pair(DurationUnit.MICROSECONDS->toString(), 'to_microseconds')
-   ]->filter(p | $p.first == $unitWithoutQuotes).second->toOne('Unit not found: ' + $unitWithoutQuotes);
+   ]->filter(p | $p.first == $unitWithoutQuotes).second->toOne('Time unit not supported in DuckDb: ' + $unitWithoutQuotes);
 
    $interval_func +'(' + $i +')';
 }
