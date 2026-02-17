@@ -1102,6 +1102,8 @@ Enum meta::relational::functions::sqlQueryToString::DynaFunctionRegistry
   array_contains,
   array_distinct,
   array_flatten,
+  isArray,
+  isObject,
   ascii,
   asin,
   atan,
