@@ -34,6 +34,7 @@ import org.finos.legend.pure.generated.Root_meta_pure_functions_collection_Pair_
 import org.finos.legend.pure.m3.coreinstance.meta.pure.functions.collection.List;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.functions.collection.Pair;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.Class;
+import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.Enumeration;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.variant.Variant;
 import org.finos.legend.pure.m3.exception.PureExecutionException;
 import org.finos.legend.pure.m3.execution.ExecutionSupport;
@@ -57,6 +58,7 @@ import org.finos.legend.pure.runtime.java.compiled.generation.GenericTypeSeriali
 import org.finos.legend.pure.runtime.java.compiled.generation.ProcessorContext;
 import org.finos.legend.pure.runtime.java.compiled.generation.processors.SourceInfoProcessor;
 import org.finos.legend.pure.runtime.java.compiled.generation.processors.natives.AbstractNative;
+import org.finos.legend.pure.runtime.java.compiled.generation.processors.support.Pure;
 import org.finos.legend.pure.runtime.java.compiled.generation.processors.support.map.PureMap;
 import org.finos.legend.pure.runtime.java.compiled.generation.processors.type.FullJavaPaths;
 import org.finos.legend.pure.runtime.java.compiled.generation.processors.type.TypeProcessor;
@@ -287,6 +289,13 @@ public class To extends AbstractNative
                     return new BigDecimal(jsonNode.asText());
                 }
             }
+            else if (es.getProcessorSupport().instance_instanceOf(pureGenericType._rawType(), M3Paths.Enumeration))
+            {
+                if (jsonNode.isTextual())
+                {
+                    return Pure.getEnumByName((Enumeration<?>) pureGenericType._rawType(), jsonNode.asText());
+                }
+            }
             else if (pureGenericType._rawType() == es.getProcessorSupport().package_getByUserPath(M3Paths.Number))
             {
                 if (jsonNode.isIntegralNumber())
@@ -331,6 +340,6 @@ public class To extends AbstractNative
             throw new PureExecutionException(sourceInformation, e.getMessage(), e);
         }
 
-        throw new PureExecutionException(sourceInformation, GenericType.print(pureGenericType, es.getProcessorSupport()) + " is not managed yet! Value: " + jsonNode);
+        throw new PureExecutionException(sourceInformation, GenericType.print(pureGenericType, es.getProcessorSupport()) + " cannot be converted from value: " + jsonNode);
     }
 }

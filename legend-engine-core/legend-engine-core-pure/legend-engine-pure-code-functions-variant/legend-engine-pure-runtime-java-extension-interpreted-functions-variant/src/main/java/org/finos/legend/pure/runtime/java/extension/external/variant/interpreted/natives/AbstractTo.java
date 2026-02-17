@@ -34,7 +34,6 @@ import org.finos.legend.pure.m3.navigation.PackageableElement.PackageableElement
 import org.finos.legend.pure.m3.navigation.generictype.GenericType;
 import org.finos.legend.pure.m4.ModelRepository;
 import org.finos.legend.pure.m4.coreinstance.CoreInstance;
-import org.finos.legend.pure.m4.coreinstance.primitive.date.PureDate;
 import org.finos.legend.pure.runtime.java.extension.external.variant.VariantInstanceImpl;
 import org.finos.legend.pure.runtime.java.interpreted.ExecutionSupport;
 import org.finos.legend.pure.runtime.java.interpreted.FunctionExecutionInterpreted;
@@ -180,6 +179,13 @@ public abstract class AbstractTo extends NativeFunction
                 return this.repository.newDecimalCoreInstance(jsonNode.textValue());
             }
         }
+        else if (processorSupport.instance_instanceOf(targetRawType, M3Paths.Enumeration))
+        {
+            if (jsonNode.isTextual())
+            {
+                return org.finos.legend.pure.m3.navigation.enumeration.Enumeration.findEnum(targetRawType, jsonNode.asText());
+            }
+        }
         else if (targetRawType == processorSupport.package_getByUserPath(M3Paths.Number))
         {
             if (jsonNode.isIntegralNumber())
@@ -250,6 +256,6 @@ public abstract class AbstractTo extends NativeFunction
             }
         }
 
-        throw new PureExecutionException(functionExpressionCallStack.peek().getSourceInformation(), GenericType.print(targetGenericType, processorSupport) + " is not managed yet! Value: " + jsonNode, functionExpressionCallStack);
+        throw new PureExecutionException(functionExpressionCallStack.peek().getSourceInformation(), GenericType.print(targetGenericType, processorSupport) + " cannot be converted from value: " + jsonNode, functionExpressionCallStack);
     }
 }

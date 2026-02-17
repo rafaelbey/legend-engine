@@ -4656,7 +4656,13 @@ function meta::relational::functions::pureToSqlQuery::toVariantFriendlyValue(col
   };
 
   $cols->unwrapAlias()->match([
-    l: Literal[1] | $toList->eval($l->filter(v | !$v.value->instanceOf(SQLNull))),    
+    l: Literal[1] | $toList->eval($l->filter(v | !$v.value->instanceOf(SQLNull))),  
+    df: DynaFunction[1] | 
+      if ($df.name == 'cast' && $df.parameters->last()->toOne()->type()->in([
+                    meta::relational::metamodel::datatype::SemiStructured,
+                    meta::relational::metamodel::datatype::Object, 
+                    meta::relational::metamodel::datatype::Array
+                  ]), | $df, | $toList->eval($df)),  
     c: RelationalOperationElement[1] | $c,
     a: RelationalOperationElement[*] | $toList->eval($a)
   ]);
@@ -9465,7 +9471,7 @@ function meta::relational::functions::pureToSqlQuery::genericTypeToDataType(gene
             pair(|$path == 'Byte', |^meta::relational::metamodel::datatype::Binary(size=10000)),
             // pair(|$path == 'StrictTime', |fail('not supported yet!')),
             pair(|$path == 'Decimal', |^meta::relational::metamodel::datatype::Decimal(precision=32, scale=16)),
-            pair(|$path == 'String', |^meta::relational::metamodel::datatype::Varchar(size=1024)),
+            pair(|$path == 'String' || $genericType.rawType->toOne()->instanceOf(Enumeration), |^meta::relational::metamodel::datatype::Varchar(size=1024)),
             pair(|$path == 'DateTime', |^meta::relational::metamodel::datatype::Timestamp()),
             pair(|$path == 'Number', |^meta::relational::metamodel::datatype::Decimal(precision=32, scale=16)),
             pair(|$path == 'Date', |^meta::relational::metamodel::datatype::Timestamp()),
@@ -9491,7 +9497,7 @@ function meta::relational::functions::pureToSqlQuery::genericTypeToDataType(gene
             // pair(|$path == 'UTinyInt', |fail('not supported yet!')),
             pair(|$path == 'Varchar', |^meta::relational::metamodel::datatype::Varchar(size=$variables->cast(@InstanceValue)->evaluateAndDeactivate().values->toOne()->cast(@Integer)))
         ],
-        | fail ($genericType->printGenericType(false) + ' is not managed yet!');
+        | fail ($genericType->printGenericType(false) + ' is not supported yet!');
     )->cast(@meta::relational::metamodel::datatype::DataType);
 
     if ($mult->isToMany(), |^meta::relational::metamodel::datatype::Array(type = $type), |$type);
@@ -10026,8 +10032,8 @@ function meta::relational::functions::pureToSqlQuery::getSupportedFunctions():Ma
         ^PureFunctionToRelationalFunctionPair(first=meta::pure::functions::math::round_Number_1__Integer_1_, second=meta::relational::functions::pureToSqlQuery::processDynaFunctionWithCast_FunctionExpression_1__PropertyMapping_MANY__SelectWithCursor_1__Map_1__State_1__JoinType_1__String_1__List_1__DebugContext_1__Extension_MANY__RelationalOperationElement_1_),
         ^PureFunctionToRelationalFunctionPair(first=meta::pure::functions::math::round_Decimal_1__Integer_1__Decimal_1_, second=meta::relational::functions::pureToSqlQuery::processDynaFunction_FunctionExpression_1__PropertyMapping_MANY__SelectWithCursor_1__Map_1__State_1__JoinType_1__String_1__List_1__DebugContext_1__Extension_MANY__RelationalOperationElement_1_),
         ^PureFunctionToRelationalFunctionPair(first=meta::pure::functions::math::round_Float_1__Integer_1__Float_1_, second=meta::relational::functions::pureToSqlQuery::processDynaFunction_FunctionExpression_1__PropertyMapping_MANY__SelectWithCursor_1__Map_1__State_1__JoinType_1__String_1__List_1__DebugContext_1__Extension_MANY__RelationalOperationElement_1_),
-        ^PureFunctionToRelationalFunctionPair(first=meta::pure::functions::math::ceiling_Number_1__Integer_1_, second=meta::relational::functions::pureToSqlQuery::processDynaFunctionWithCast_FunctionExpression_1__PropertyMapping_MANY__SelectWithCursor_1__Map_1__State_1__JoinType_1__String_1__List_1__DebugContext_1__Extension_MANY__RelationalOperationElement_1_),
-        ^PureFunctionToRelationalFunctionPair(first=meta::pure::functions::math::floor_Number_1__Integer_1_, second=meta::relational::functions::pureToSqlQuery::processDynaFunctionWithCast_FunctionExpression_1__PropertyMapping_MANY__SelectWithCursor_1__Map_1__State_1__JoinType_1__String_1__List_1__DebugContext_1__Extension_MANY__RelationalOperationElement_1_),
+        ^PureFunctionToRelationalFunctionPair(first=meta::pure::functions::math::ceiling_Number_1__Integer_1_, second=meta::relational::functions::pureToSqlQuery::processDynaFunction_FunctionExpression_1__PropertyMapping_MANY__SelectWithCursor_1__Map_1__State_1__JoinType_1__String_1__List_1__DebugContext_1__Extension_MANY__RelationalOperationElement_1_),
+        ^PureFunctionToRelationalFunctionPair(first=meta::pure::functions::math::floor_Number_1__Integer_1_, second=meta::relational::functions::pureToSqlQuery::processDynaFunction_FunctionExpression_1__PropertyMapping_MANY__SelectWithCursor_1__Map_1__State_1__JoinType_1__String_1__List_1__DebugContext_1__Extension_MANY__RelationalOperationElement_1_),
         ^PureFunctionToRelationalFunctionPair(first=meta::pure::functions::math::bitAnd_Integer_1__Integer_1__Integer_1_, second=meta::relational::functions::pureToSqlQuery::processDynaFunction_FunctionExpression_1__PropertyMapping_MANY__SelectWithCursor_1__Map_1__State_1__JoinType_1__String_1__List_1__DebugContext_1__Extension_MANY__RelationalOperationElement_1_),
         ^PureFunctionToRelationalFunctionPair(first=meta::pure::functions::math::bitNot_Integer_1__Integer_1_, second=meta::relational::functions::pureToSqlQuery::processDynaFunction_FunctionExpression_1__PropertyMapping_MANY__SelectWithCursor_1__Map_1__State_1__JoinType_1__String_1__List_1__DebugContext_1__Extension_MANY__RelationalOperationElement_1_),
         ^PureFunctionToRelationalFunctionPair(first=meta::pure::functions::math::bitOr_Integer_1__Integer_1__Integer_1_, second=meta::relational::functions::pureToSqlQuery::processDynaFunction_FunctionExpression_1__PropertyMapping_MANY__SelectWithCursor_1__Map_1__State_1__JoinType_1__String_1__List_1__DebugContext_1__Extension_MANY__RelationalOperationElement_1_),
