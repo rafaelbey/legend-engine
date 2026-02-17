@@ -76,18 +76,15 @@ public class Test_Relational_DuckDB_GrammarFunctions_PCT extends PCTReportConfig
             pack("meta::pure::functions::lang::tests::compare", "\"No SQL translation exists for the PURE function 'compare_T_1__T_1__Integer_1_'.", AdapterQualifier.unsupportedFeature),
 
             // Minus
-            one("meta::pure::functions::math::tests::minus::testDecimalMinus_Function_1__Boolean_1_", "\"\nexpected: -4.0D\nactual:   -4.0\""),
             one("meta::pure::functions::math::tests::minus::testLargeMinus_Function_1__Boolean_1_", "java.sql.SQLException: Out of Range Error: Overflow in subtraction of INT64 (-9223372036854775718 - 132)!"),
             one("meta::pure::functions::math::tests::minus::testSingleMinusType_Function_1__Boolean_1_", "No SQL translation exists for the PURE function 'genericType_Any_MANY__GenericType_1_'", AdapterQualifier.unsupportedFeature),
             one("meta::pure::functions::math::tests::minus::testSingleMinus_Function_1__Boolean_1_", "java.sql.SQLException: Parser Error: SELECT clause without selection list"),
 
             // Plus
-            one("meta::pure::functions::math::tests::plus::testDecimalPlus_Function_1__Boolean_1_", "\"\nexpected: 6.0D\nactual:   6.0\""),
             one("meta::pure::functions::math::tests::plus::testLargePlus_Function_1__Boolean_1_", "java.sql.SQLException: Out of Range Error: Overflow in addition of INT64 (9223372036854775807 + 3)!"),
             one("meta::pure::functions::math::tests::plus::testSinglePlusType_Function_1__Boolean_1_", "No SQL translation exists for the PURE function 'genericType_Any_MANY__GenericType_1_'", AdapterQualifier.unsupportedFeature),
 
             // Times
-            one("meta::pure::functions::math::tests::times::testDecimalTimes_Function_1__Boolean_1_", "\"\nexpected: 353791.470D\nactual:   353791.47\""),
             one("meta::pure::functions::math::tests::times::testLargeTimes_Function_1__Boolean_1_", "java.sql.SQLException: Out of Range Error: Overflow in multiplication of INT64 (2 * 9223372036854775807)!"),
 
             // Plus (String)

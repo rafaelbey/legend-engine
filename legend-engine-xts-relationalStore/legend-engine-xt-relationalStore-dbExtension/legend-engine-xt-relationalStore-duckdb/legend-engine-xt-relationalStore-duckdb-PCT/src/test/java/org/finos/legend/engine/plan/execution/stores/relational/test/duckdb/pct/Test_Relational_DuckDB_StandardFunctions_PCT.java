@@ -40,7 +40,7 @@ public class Test_Relational_DuckDB_StandardFunctions_PCT extends PCTReportConfi
             // In
             one("meta::pure::functions::collection::tests::in::testInIsEmpty_Function_1__Boolean_1_", "NullPointer exception"),
             one("meta::pure::functions::collection::tests::in::testInNonPrimitive_Function_1__Boolean_1_", "\"Parameter to IN operation isn't a literal!\"", AdapterQualifier.unsupportedFeature),
-            one("meta::pure::functions::collection::tests::in::testInPrimitive_Function_1__Boolean_1_", "java.sql.SQLException: Conversion Error: Unimplemented type for cast (INTEGER -> DATE)\n\nLINE 1: select 1 in (1, 2, 5, 2, 'a', true, DATE '2014-02-01', 'c')\n               ^"),
+            one("meta::pure::functions::collection::tests::in::testInPrimitive_Function_1__Boolean_1_", "java.sql.SQLException: Conversion Error: Unimplemented type for cast (INTEGER -> DATE)\n\nLINE 1: select 1 in (1, 2, 5, 2, 'a', true, DATE '2014-02-01', 'c')"),
 
             // Covariance/Correlation
             one("meta::pure::functions::math::tests::corr::testCorr_Function_1__Boolean_1_", "\"Unused format args. [4] arguments provided to expression \"CORR(%s, %s)\"\""),
@@ -52,14 +52,12 @@ public class Test_Relational_DuckDB_StandardFunctions_PCT extends PCTReportConfi
             one("meta::pure::functions::math::tests::toRadians::testToRadians_Function_1__Boolean_1_", "java.sql.SQLException: Out of Range Error: Overflow in multiplication of DECIMAL(18) (10 * 565486677646162740). You might want to add an explicit cast to a bigger decimal."),
 
             // Max
-            one("meta::pure::functions::math::tests::max::testMax_Numbers_Function_1__Boolean_1_", "\"\nexpected: 2\nactual:   2.0\""),
             one("meta::pure::functions::collection::tests::max::testMax_Function_1__Boolean_1_", "\"Cannot cast a collection of size 0 to multiplicity [1]\""),
 
             // MaxBy
             one("meta::pure::functions::math::tests::maxBy::testMaxBy_Function_1__Boolean_1_", "java.sql.SQLException: Binder Error: No function matches the given name and argument types 'max_by(INTEGER, INTEGER, INTEGER, INTEGER)'"),
 
             // Min
-            one("meta::pure::functions::math::tests::min::testMin_Numbers_Function_1__Boolean_1_", "\"\nexpected: 1.23D\nactual:   1.23\""),
             one("meta::pure::functions::collection::tests::min::testMin_Function_1__Boolean_1_", "\"Cannot cast a collection of size 0 to multiplicity [1]\""),
 
             // MinBy
@@ -108,12 +106,10 @@ public class Test_Relational_DuckDB_StandardFunctions_PCT extends PCTReportConfi
 
             // Greatest
             one("meta::pure::functions::collection::tests::greatest::testGreatest_DateTime_Function_1__Boolean_1_", "\"\nexpected: %2025-02-10T20:10:20+0000\nactual:   %2025-02-10T20:10:20.000000000+0000\""),
-            one("meta::pure::functions::collection::tests::greatest::testGreatest_Number_Function_1__Boolean_1_", "\"\nexpected: 2\nactual:   2.0\""),
             one("meta::pure::functions::collection::tests::greatest::testGreatest_Single_Function_1__Boolean_1_", "\"\nexpected: %2025-02-10T20:10:20+0000\nactual:   %2025-02-10T20:10:20.000000000+0000\""),
 
             // Least
             one("meta::pure::functions::collection::tests::least::testLeast_DateTime_Function_1__Boolean_1_", "\"\nexpected: %2025-01-10T15:25:30+0000\nactual:   %2025-01-10T15:25:30.000000000+0000\""),
-            one("meta::pure::functions::collection::tests::least::testLeast_Number_Function_1__Boolean_1_", "\"\nexpected: 1.0D\nactual:   1.0\""),
             one("meta::pure::functions::collection::tests::least::testLeast_Single_Function_1__Boolean_1_", "\"\nexpected: %2025-02-10T20:10:20+0000\nactual:   %2025-02-10T20:10:20.000000000+0000\"")
     );
 

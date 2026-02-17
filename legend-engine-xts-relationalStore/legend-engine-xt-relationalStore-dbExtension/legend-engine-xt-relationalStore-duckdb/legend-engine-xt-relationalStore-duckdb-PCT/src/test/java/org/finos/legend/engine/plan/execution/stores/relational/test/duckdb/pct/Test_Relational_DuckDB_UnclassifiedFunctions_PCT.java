@@ -47,19 +47,7 @@ public class Test_Relational_DuckDB_UnclassifiedFunctions_PCT extends PCTReportC
             one("meta::pure::functions::string::tests::lpad::testLpadEmptyChar_Function_1__Boolean_1_", "java.sql.SQLException: Invalid Input Error: Insufficient padding in LPAD."),
 
             //rpad
-            one("meta::pure::functions::string::tests::rpad::testRpadEmptyChar_Function_1__Boolean_1_", "java.sql.SQLException: Invalid Input Error: Insufficient padding in RPAD."),
-
-            //tolowerfirstcharacter
-            one("meta::pure::functions::string::tests::tolowerfirstcharacter::TestToLowerFirstCharacter_Function_1__Boolean_1_", "\"\nexpected: 'xoXoXoX'\nactual:   'XoXoXoX'\""),
-
-            //toupperfirstcharacter
-            one("meta::pure::functions::string::tests::toupperfirstcharacter::TestToUpperFirstCharacter_Function_1__Boolean_1_", "\"\nexpected: 'XOxOxOx'\nactual:   'xOxOxOx'\""),
-
-            // Multiline regexp parameter needs to be investigated
-            one("meta::pure::functions::string::tests::regexpLike::testRegexpLike_CaseInsensitive_Multiline_Function_1__Boolean_1_", "\"Assert failed\""),
-            one("meta::pure::functions::string::tests::regexpLike::testRegexpLike_CaseInsensitive_Multiline_NonNewlineSensitive_Function_1__Boolean_1_", "\"Assert failed\""),
-            one("meta::pure::functions::string::tests::regexpLike::testRegexpLike_Multiline_Function_1__Boolean_1_", "\"Assert failed\""),
-            one("meta::pure::functions::string::tests::regexpLike::testRegexpLike_Multiline_NonNewlineSensitive_Function_1__Boolean_1_", "\"Assert failed\"")
+            one("meta::pure::functions::string::tests::rpad::testRpadEmptyChar_Function_1__Boolean_1_", "java.sql.SQLException: Invalid Input Error: Insufficient padding in RPAD.")
     );
 
     public static Test suite()

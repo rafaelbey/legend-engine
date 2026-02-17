@@ -19,11 +19,11 @@ import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.MutableList;
 import org.finos.legend.engine.plan.execution.stores.relational.connection.tests.api.TestConnectionIntegrationLoader;
 import org.finos.legend.engine.protocol.pure.v1.model.packageableElement.store.relational.connection.DatabaseType;
-import org.finos.legend.engine.pure.runtime.testConnection.CoreExternalTestConnectionCodeRepositoryProvider;
 import org.finos.legend.engine.test.shared.framework.TestServerResource;
 import org.finos.legend.pure.code.core.CoreRelationalSqlServerCodeRepositoryProvider;
 import org.finos.legend.pure.m3.PlatformCodeRepositoryProvider;
 import org.finos.legend.pure.m3.pct.reports.config.PCTReportConfiguration;
+import org.finos.legend.pure.m3.pct.reports.config.exclusion.AdapterQualifier;
 import org.finos.legend.pure.m3.pct.reports.config.exclusion.ExclusionSpecification;
 import org.finos.legend.pure.m3.pct.reports.model.Adapter;
 import org.finos.legend.pure.m3.pct.shared.model.ReportScope;
@@ -42,7 +42,7 @@ public class Test_Relational_SqlServer_EssentialFunctions_PCT extends PCTReportC
             one("meta::pure::functions::collection::tests::add::testAdd_Function_1__Boolean_1_", "[unsupported-api] The function 'array_append' (state: [Select, false]) is not supported yet"),
 
             // Concatenate
-            one("meta::pure::functions::collection::tests::concatenate::testConcatenateMixedType_Function_1__Boolean_1_", "\"Any is not managed yet!\""),
+            one("meta::pure::functions::collection::tests::concatenate::testConcatenateMixedType_Function_1__Boolean_1_", "Any is not supported yet!", AdapterQualifier.unsupportedFeature),
             one("meta::pure::functions::collection::tests::concatenate::testConcatenateSimple_Function_1__Boolean_1_", "\"[unsupported-api] The function 'array_concatenate' (state: [Select, false]) is not supported yet\""),
             one("meta::pure::functions::collection::tests::concatenate::testConcatenateTypeInference_Function_1__Boolean_1_", "\"[unsupported-api] The function 'array_concatenate' (state: [Select, false]) is not supported yet\""),
 
@@ -75,7 +75,7 @@ public class Test_Relational_SqlServer_EssentialFunctions_PCT extends PCTReportC
 
             // Fold
             one("meta::pure::functions::collection::tests::fold::testFoldCollectionAccumulator_Function_1__Boolean_1_", "[unsupported-api] relational lambda processing not supported for Database Type: SqlServer"),
-            one("meta::pure::functions::collection::tests::fold::testFoldEmptyListAndEmptyIdentity_Function_1__Boolean_1_", "Any is not managed yet!"),
+            one("meta::pure::functions::collection::tests::fold::testFoldEmptyListAndEmptyIdentity_Function_1__Boolean_1_", "Any is not supported yet!", AdapterQualifier.unsupportedFeature),
             one("meta::pure::functions::collection::tests::fold::testFoldEmptyListAndNonEmptyIdentity_Function_1__Boolean_1_", "[unsupported-api] relational lambda processing not supported for Database Type: "),
             one("meta::pure::functions::collection::tests::fold::testFoldFiltering_Function_1__Boolean_1_", "Function does not exist 'meta::pure::functions::lang::copy(FO_Person[1],String[1],KeyExpression[1])'"),
             one("meta::pure::functions::collection::tests::fold::testFoldMixedAccumulatorTypes_Function_1__Boolean_1_", "[unsupported-api] relational lambda processing not supported for Database Type: SqlServer"),
@@ -274,17 +274,19 @@ public class Test_Relational_SqlServer_EssentialFunctions_PCT extends PCTReportC
             one("meta::pure::functions::collection::tests::removeDuplicates::testRemoveDuplicatesEmptyList_Function_1__Boolean_1_", "\"[unsupported-api] The function 'array_distinct' (state: [Select, false]) is not supported yet\""),
             one("meta::pure::functions::collection::tests::removeDuplicates::testRemoveDuplicatesPrimitiveNonStandardFunction_Function_1__Boolean_1_", "\"No SQL translation exists for the PURE function 'removeDuplicates_T_MANY__Function_$0_1$__Function_$0_1$__T_MANY_'."),
             one("meta::pure::functions::collection::tests::removeDuplicates::testRemoveDuplicatesPrimitiveStandardFunctionExplicit_Function_1__Boolean_1_", "\"No SQL translation exists for the PURE function 'removeDuplicates_T_MANY__Function_$0_1$__Function_$0_1$__T_MANY_'."),
-            one("meta::pure::functions::collection::tests::removeDuplicates::testRemoveDuplicatesPrimitiveStandardFunctionMixedTypes_Function_1__Boolean_1_", "\"Any is not managed yet!\""),
+            one("meta::pure::functions::collection::tests::removeDuplicates::testRemoveDuplicatesPrimitiveStandardFunctionMixedTypes_Function_1__Boolean_1_", "Any is not supported yet!", AdapterQualifier.unsupportedFeature),
             one("meta::pure::functions::collection::tests::removeDuplicates::testRemoveDuplicatesPrimitiveStandardFunctionSimple_Function_1__Boolean_1_", "\"[unsupported-api] The function 'array_distinct' (state: [Select, false]) is not supported yet\""),
             one("meta::pure::functions::collection::tests::removeDuplicatesBy::testRemoveDuplicatesByPrimitive_Function_1__Boolean_1_", "\"No SQL translation exists for the PURE function 'removeDuplicates_T_MANY__Function_$0_1$__Function_$0_1$__T_MANY_'."),
 
             //Date
+            one("meta::pure::functions::date::tests::testAdjustByNanosecondsBigNumber_Function_1__Boolean_1_", "\"Time unit not supported in DuckDb: NANOSECONDS\"", AdapterQualifier.unsupportedFeature),
+            one("meta::pure::functions::date::tests::testAdjustByNanoseconds_Function_1__Boolean_1_", "\"Time unit not supported in DuckDb: NANOSECONDS\"", AdapterQualifier.unsupportedFeature),
+            one("meta::pure::functions::date::tests::testDateDiffNanoseconds_Function_1__Boolean_1_", "\"Time unit not supported in DuckDb: NANOSECONDS\"", AdapterQualifier.unsupportedFeature),
             one("meta::pure::functions::date::tests::testAdjustByDaysBigNumber_Function_1__Boolean_1_", "\"Failed to execute plan - RuntimeException - com.microsoft.sqlserver.jdbc.SQLServerException: Arithmetic overflow error converting expression to data type int.\""),
             one("meta::pure::functions::date::tests::testAdjustByHoursBigNumber_Function_1__Boolean_1_", "\"Failed to execute plan - RuntimeException - com.microsoft.sqlserver.jdbc.SQLServerException: Arithmetic overflow error converting expression to data type int.\""),
-            one("meta::pure::functions::date::tests::testAdjustByMicrosecondsBigNumber_Function_1__Boolean_1_", "\"Failed to execute plan - RuntimeException - com.microsoft.sqlserver.jdbc.SQLServerException: Arithmetic overflow error converting expression to data type int.\""),
             one("meta::pure::functions::date::tests::testAdjustByMillisecondsBigNumber_Function_1__Boolean_1_", "\"Failed to execute plan - RuntimeException - com.microsoft.sqlserver.jdbc.SQLServerException: Arithmetic overflow error converting expression to data type int.\""),
             one("meta::pure::functions::date::tests::testAdjustByMilliseconds_Function_1__Boolean_1_", "\"\nexpected: %2015-04-15T13:11:11.339+0000\nactual:   %2015-04-15T13:11:11.337+0000\""),
-            one("meta::pure::functions::date::tests::testAdjustByMinutesBigNumber_Function_1__Boolean_1_", "\"Failed to execute plan - RuntimeException - com.microsoft.sqlserver.jdbc.SQLServerException: Arithmetic overflow error converting expression to data type int.\""),
+            one("meta::pure::functions::date::tests::testAdjustByMinutesBigNumber_Function_1__Boolean_1_", "\"expected equivalent up to MILLISECONDS: <%-21457-01-08T20:48:00+0000> but was: <%21459-07-29T20:48:00.000000000+0000>\""),
             one("meta::pure::functions::date::tests::testAdjustByMonthsBigNumber_Function_1__Boolean_1_", "\"Failed to execute plan - RuntimeException - com.microsoft.sqlserver.jdbc.SQLServerException: Arithmetic overflow error converting expression to data type int.\""),
             one("meta::pure::functions::date::tests::testAdjustBySecondsBigNumber_Function_1__Boolean_1_", "\"Failed to execute plan - RuntimeException - com.microsoft.sqlserver.jdbc.SQLServerException: Arithmetic overflow error converting expression to data type int.\""),
             one("meta::pure::functions::date::tests::testAdjustReflectiveEvaluation_Function_1__Boolean_1_", "Can't find a match for function 'meta::pure::functions::lang::eval(NativeFunction<{Date[1], Integer[1], DurationUnit[1]->Date[1]}>[1],StrictDate[1],Integer[1],DurationUnit[1])'."),
