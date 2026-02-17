@@ -131,7 +131,14 @@ function meta::relational::tests::pct::testAdapterForRelationalExecution<X|o>(f:
 
     let resultType = $f->functionReturnType().rawType->toOne();
     let json = $x->fromJson();
-    if ($json->meta::pure::functions::variant::navigation::get('result')->isEmpty(),
+    if ($json->meta::pure::functions::variant::boolean::isObject()->not(),
+      |
+        if ($json->meta::pure::functions::variant::boolean::isArray(), 
+          |meta::relational::tests::pct::process::toMany($json, $resultType),
+          |meta::relational::tests::pct::process::to($json, $resultType, $f->functionReturnType())
+        );
+      ,
+      |if ($json->meta::pure::functions::variant::navigation::get('result')->isEmpty(),
             | 
               // todo move to variant json given it respect decimals..              
               let res = $x->meta::json::parseJSON()->meta::json::fromJSON(meta::protocols::pure::vX_X_X::metamodel::invocation::execution::execute::RelationalClassResult, ^meta::json::ExtendedJSONDeserializationConfig(typeKeyName='__TYPE', failOnUnknownProperties=true, nullReplacementInArray=TDSNull))->cast(@meta::protocols::pure::vX_X_X::metamodel::invocation::execution::execute::RelationalClassResult)->toOne();
@@ -166,7 +173,7 @@ function meta::relational::tests::pct::testAdapterForRelationalExecution<X|o>(f:
                   );
                   $resultFinal;
               );
-    )->cast(@X)->toMultiplicity(@[o]);
+    ))->cast(@X)->toMultiplicity(@[o]);
 }
 
 function meta::relational::tests::pct::process::getTDSResultFromProtocol(variant:Variant[1], funcReturnType:GenericType[1], extensions:meta::pure::extension::Extension[*]): Any[1]
@@ -248,7 +255,7 @@ function meta::relational::tests::pct::process::to(var: Variant[1], bType: Type[
       pair(|$rType == Date, |$var->to(@Date)),
       pair(|$rType == StrictDate, |$var->to(@StrictDate)),
       pair(|$rType == DateTime, |$var->to(@DateTime)),
-      pair(|$rType == Variant, |$var->to(@Variant)),
+      pair(|$rType == Variant, |$var->to(@String)->toOne()->meta::pure::functions::variant::convert::fromJson()),
 
       pair(|$rType == List && $type.typeArguments->at(0).rawType == Integer, |$var->to(@String)->toOne()->meta::pure::functions::variant::convert::fromJson()->to(@List<Integer>)),
       pair(|$rType == List && $type.typeArguments->at(0).rawType == Float, |$var->to(@String)->toOne()->meta::pure::functions::variant::convert::fromJson()->to(@List<Float>)),
