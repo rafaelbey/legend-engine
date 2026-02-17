@@ -340,6 +340,6 @@ public class To extends AbstractNative
             throw new PureExecutionException(sourceInformation, e.getMessage(), e);
         }
 
-        throw new PureExecutionException(sourceInformation, GenericType.print(pureGenericType, es.getProcessorSupport()) + " cannot be converted from value: " + jsonNode);
+        throw new PureExecutionException(sourceInformation, GenericType.print(pureGenericType, es.getProcessorSupport()) + " is not supported yet!");
     }
 }

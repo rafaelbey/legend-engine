@@ -256,6 +256,6 @@ public abstract class AbstractTo extends NativeFunction
             }
         }
 
-        throw new PureExecutionException(functionExpressionCallStack.peek().getSourceInformation(), GenericType.print(targetGenericType, processorSupport) + " cannot be converted from value: " + jsonNode, functionExpressionCallStack);
+        throw new PureExecutionException(functionExpressionCallStack.peek().getSourceInformation(), GenericType.print(targetGenericType, processorSupport) + " is not supported yet!", functionExpressionCallStack);
     }
 }
