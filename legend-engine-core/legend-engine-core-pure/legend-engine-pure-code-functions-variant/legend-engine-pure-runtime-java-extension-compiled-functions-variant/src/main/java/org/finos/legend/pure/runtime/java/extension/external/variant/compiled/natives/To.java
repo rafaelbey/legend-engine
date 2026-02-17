@@ -189,7 +189,7 @@ public class To extends AbstractNative
     {
         try
         {
-            if (jsonNode == null || jsonNode.isNull())
+            if (jsonNode == null || (jsonNode.isNull() && pureGenericType._rawType() != es.getProcessorSupport().package_getByUserPath(M3Paths.Variant)))
             {
                 return null;
             }
