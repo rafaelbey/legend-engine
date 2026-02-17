@@ -1500,6 +1500,8 @@ public class Handlers
         // Variant
         register("meta::pure::functions::variant::convert::fromJson_String_1__Variant_1_", "fromJson", true, ps -> res(M3Paths.Variant, "one"));
         register("meta::pure::functions::variant::convert::toJson_Variant_1__String_1_", "toJson", true, ps -> res("String", "one"));
+        register("meta::pure::functions::variant::boolean::isArray_Variant_$0_1$__Boolean_1_", "isArray", true, ps -> res("Boolean", "one"));
+        register("meta::pure::functions::variant::boolean::isObject_Variant_$0_1$__Boolean_1_", "isObject", true, ps -> res("Boolean", "one"));
         register("meta::pure::functions::variant::convert::to_Variant_$0_1$__T_$0_1$__T_$0_1$_", "to", true, ps -> res(ps.get(1)._genericType(), "zeroOne"));
         register("meta::pure::functions::variant::convert::to_Variant_$0_1$__T_$0_1$__String_1__Pair_MANY__T_$0_1$_", "to", true, ps -> res(ps.get(1)._genericType(), "zeroOne"));
         register("meta::pure::functions::variant::convert::toMany_Variant_$0_1$__T_$0_1$__T_MANY_", "toMany", true, ps -> res(ps.get(1)._genericType(), "zeroMany"));

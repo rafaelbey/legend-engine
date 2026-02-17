@@ -760,6 +760,8 @@ meta::pure::functions::variant::convert::to_Variant_$0_1$__T_$0_1$__String_1__Pa
 meta::pure::functions::variant::convert::to_Variant_$0_1$__T_$0_1$__T_$0_1$_
 meta::pure::functions::variant::navigation::get_Variant_$0_1$__Integer_1__Variant_$0_1$_
 meta::pure::functions::variant::navigation::get_Variant_$0_1$__String_1__Variant_$0_1$_
+meta::pure::functions::variant::boolean::isArray_Variant_$0_1$__Boolean_1_
+meta::pure::functions::variant::boolean::isObject_Variant_$0_1$__Boolean_1_
 meta::pure::graphFetch::execution::graphFetchCheckedUnexpanded_T_MANY__RootGraphFetchTree_1__Checked_MANY_
 meta::pure::graphFetch::execution::graphFetchChecked_T_MANY__RootGraphFetchTree_1__Integer_1__Checked_MANY_
 meta::pure::graphFetch::execution::graphFetchUnexpanded_T_MANY__RootGraphFetchTree_1__T_MANY_
