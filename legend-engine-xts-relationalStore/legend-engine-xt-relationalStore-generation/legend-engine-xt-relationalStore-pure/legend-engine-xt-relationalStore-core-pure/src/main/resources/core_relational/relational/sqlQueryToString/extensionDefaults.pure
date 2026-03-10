@@ -269,7 +269,7 @@ function meta::relational::functions::sqlQueryToString::default::getDynaFunction
     dynaFnToSql('cumulativeDistribution', $allStates,            ^ToSql(format='cume_dist()')),
     dynaFnToSql('sha1',                   $allStates,            ^ToSql(format='sha1(%s)')),
     dynaFnToSql('sha256',                 $allStates,            ^ToSql(format='sha256(%s)')),
-    dynaFnToSql('sign',                   $allStates,            ^ToSql(format='sign(%s)')),
+    dynaFnToSql('sign',                   $allStates,            ^ToSql(format='cast(sign(%s) as INTEGER)')),
     dynaFnToSql('sin',                    $allStates,            ^ToSql(format='sin(%s)')),
     dynaFnToSql('sinh',                   $allStates,            ^ToSql(format='sinh(%s)')),
     dynaFnToSql('splitPart',              $allStates,            ^ToSql(format='split_part(%s, %s, %s)')),

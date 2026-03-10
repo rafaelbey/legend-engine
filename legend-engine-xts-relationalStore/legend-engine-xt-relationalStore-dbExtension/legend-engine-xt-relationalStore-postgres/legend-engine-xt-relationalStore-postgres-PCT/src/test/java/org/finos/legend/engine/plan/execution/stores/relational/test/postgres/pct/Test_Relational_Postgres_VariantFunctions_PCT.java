@@ -82,8 +82,13 @@ public class Test_Relational_Postgres_VariantFunctions_PCT extends PCTReportConf
             one("meta::pure::functions::variant::tests::convert::to::model::testToClassAndAccessNestedQualifiedProperty_oneToOne_Function_1__Boolean_1_", "[unsupported-api] relational lambda processing not supported for Database Type: Postgres"),
             one("meta::pure::functions::variant::tests::convert::to::model::testToClassAndAccessQualifiedProperty_Function_1__Boolean_1_", "[unsupported-api] relational lambda processing not supported for Database Type: Postgres"),
             one("meta::pure::functions::variant::tests::convert::to::model::testToClassWithInheritanceAndInstanceOf_Function_1__Boolean_1_", "\"[unsupported-api] relational lambda processing not supported for Database Type: Postgres\""),
-            one("meta::pure::functions::variant::tests::convert::to::model::testToClassWithInheritanceAndInstanceOf_withTypeLookup_Function_1__Boolean_1_", "[unsupported-api] relational lambda processing not supported for Database Type: Postgres")
+            one("meta::pure::functions::variant::tests::convert::to::model::testToClassWithInheritanceAndInstanceOf_withTypeLookup_Function_1__Boolean_1_", "[unsupported-api] relational lambda processing not supported for Database Type: Postgres"),
 
+            // isArray / isObject
+            one("meta::pure::functions::variant::boolean::tests::isArray::testIsArrayTrue_Function_1__Boolean_1_", "[unsupported-api] The function 'isArray' (state: [Select, false]) is not supported yet"),
+            one("meta::pure::functions::variant::boolean::tests::isArray::testIsArrayFalse_Function_1__Boolean_1_", "[unsupported-api] The function 'isArray' (state: [Select, false]) is not supported yet"),
+            one("meta::pure::functions::variant::boolean::tests::isObject::testIsObjectTrue_Function_1__Boolean_1_", "[unsupported-api] The function 'isObject' (state: [Select, false]) is not supported yet"),
+            one("meta::pure::functions::variant::boolean::tests::isObject::testIsObjectFalse_Function_1__Boolean_1_", "[unsupported-api] The function 'isObject' (state: [Select, false]) is not supported yet")
     );
 
     public static Test suite()

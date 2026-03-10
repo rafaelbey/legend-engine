@@ -255,7 +255,7 @@ function meta::relational::tests::pct::process::to(var: Variant[1], bType: Type[
       pair(|$rType == Date, |$var->to(@Date)),
       pair(|$rType == StrictDate, |$var->to(@StrictDate)),
       pair(|$rType == DateTime, |$var->to(@DateTime)),
-      pair(|$rType == Variant, |$var->to(@String)->toOne()->meta::pure::functions::variant::convert::fromJson()),
+      pair(|$rType == Variant, |$var->to(@String)->map(x | $x->meta::pure::functions::variant::convert::fromJson())),
 
       pair(|$rType == List && $type.typeArguments->at(0).rawType == Integer, |$var->to(@String)->toOne()->meta::pure::functions::variant::convert::fromJson()->to(@List<Integer>)),
       pair(|$rType == List && $type.typeArguments->at(0).rawType == Float, |$var->to(@String)->toOne()->meta::pure::functions::variant::convert::fromJson()->to(@List<Float>)),

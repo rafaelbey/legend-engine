@@ -179,7 +179,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testG
                                                    ],
                                                    ['a']),
                               simpleRelationalMapping, DatabaseType.Postgres, postgresExtensions());
-   assertEquals('select (DATE_PART(\'year\', Date\'2012-01-01\') - DATE_PART(\'year\', Date\'2011-10-02\')) as "a" from personTable as "root"', $result);
+   assertEquals('select cast(DATE_PART(\'year\', Date\'2012-01-01\') - DATE_PART(\'year\', Date\'2011-10-02\') as BIGINT) as "a" from personTable as "root"', $result);
 }
 
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testGenerateDateDiffExpressionForPostgresForDifferenceInMonths():Boolean[1]
@@ -189,7 +189,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testG
                                                    ],
                                                    ['a']),
                               simpleRelationalMapping, DatabaseType.Postgres, postgresExtensions());
-   assertEquals('select ((DATE_PART(\'year\', Date\'2012-01-01\') - DATE_PART(\'year\', Date\'2011-10-02\')) * 12 + (DATE_PART(\'month\', Date\'2012-01-01\') - DATE_PART(\'month\', Date\'2011-10-02\'))) as "a" from personTable as "root"', $result);
+   assertEquals('select cast(cast(DATE_PART(\'year\', Date\'2012-01-01\') - DATE_PART(\'year\', Date\'2011-10-02\') as BIGINT) * 12 + (DATE_PART(\'month\', Date\'2012-01-01\') - DATE_PART(\'month\', Date\'2011-10-02\')) as BIGINT) as "a" from personTable as "root"', $result);
 }
 
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testGenerateDateDiffExpressionForPostgresForDifferenceInWeeks():Boolean[1]
@@ -199,7 +199,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testG
                                                    ],
                                                    ['a']),
                               simpleRelationalMapping, DatabaseType.Postgres, postgresExtensions());
-   assertEquals('select (TRUNC(DATE_PART(\'day\', Date\'2012-01-01\' - Date\'2011-10-02\')/7)) as "a" from personTable as "root"', $result);
+   assertEquals('select cast(TRUNC(DATE_PART(\'day\', Date\'2012-01-01\' - Date\'2011-10-02\')/7) as BIGINT) as "a" from personTable as "root"', $result);
 }
 
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testGenerateDateDiffExpressionForPostgresForDifferenceInDays():Boolean[1]
@@ -209,7 +209,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testG
                                                    ],
                                                   ['a']),
                               simpleRelationalMapping, DatabaseType.Postgres, postgresExtensions());
-   assertEquals('select (DATE_PART(\'day\', Timestamp\'2011-12-31 01:00:00.0\' - Timestamp\'2011-12-29 23:00:00.0\')) as "a" from personTable as "root"', $result);
+   assertEquals('select cast(DATE_PART(\'day\', Timestamp\'2011-12-31 01:00:00.0\' - Timestamp\'2011-12-29 23:00:00.0\') as BIGINT) as "a" from personTable as "root"', $result);
 }
 
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testGenerateDateDiffExpressionForPostgresForDifferenceInHours():Boolean[1]
@@ -219,7 +219,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testG
                                                    ],
                                                    ['a']),
                               simpleRelationalMapping, DatabaseType.Postgres, postgresExtensions());
-   assertEquals('select ((DATE_PART(\'day\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\')) * 24 + (DATE_PART(\'hour\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\'))) as "a" from personTable as "root"', $result);
+   assertEquals('select cast(cast(DATE_PART(\'day\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\') as BIGINT) * 24 + (DATE_PART(\'hour\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\')) as BIGINT) as "a" from personTable as "root"', $result);
 }
 
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testGenerateDateDiffExpressionForPostgresForDifferenceInMinutes():Boolean[1]
@@ -229,7 +229,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testG
                                                    ],
                                                    ['a']),
                               simpleRelationalMapping, DatabaseType.Postgres, postgresExtensions());
-   assertEquals('select (((DATE_PART(\'day\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\')) * 24 + (DATE_PART(\'hour\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\'))) * 60 + (DATE_PART(\'minute\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\'))) as "a" from personTable as "root"', $result);
+   assertEquals('select cast(cast(cast(DATE_PART(\'day\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\') as BIGINT) * 24 + (DATE_PART(\'hour\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\')) as BIGINT) * 60 + (DATE_PART(\'minute\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\')) as BIGINT) as "a" from personTable as "root"', $result);
 }
 
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testGenerateDateDiffExpressionForPostgresForDifferenceInSeconds():Boolean[1]
@@ -239,7 +239,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testG
                                                    ],
                                                    ['a']),
                               simpleRelationalMapping, DatabaseType.Postgres, postgresExtensions());
-   assertEquals('select ((((DATE_PART(\'day\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\')) * 24 + (DATE_PART(\'hour\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\'))) * 60 + (DATE_PART(\'minute\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\'))) * 60 + (DATE_PART(\'second\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\'))) as "a" from personTable as "root"', $result);
+   assertEquals('select cast(cast(cast(cast(DATE_PART(\'day\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\') as BIGINT) * 24 + (DATE_PART(\'hour\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\')) as BIGINT) * 60 + (DATE_PART(\'minute\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\')) as BIGINT) * 60 + (DATE_PART(\'second\', Timestamp\'2011-12-30 08:55:00.0\' - Timestamp\'2011-12-30 09:05:00.0\')) as BIGINT) as "a" from personTable as "root"', $result);
 }
 
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testGenerateDateDiffExpressionForPostgresForDifferenceInMilliseconds():Boolean[1]
@@ -249,13 +249,13 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testG
                                                   ],
                                                   ['DiffMilliseconds']),
                             simpleRelationalMapping, DatabaseType.Postgres, postgresExtensions());
-   assertEquals('select (((((DATE_PART(\'day\', "root".settlementDateTime - now())) * 24 + (DATE_PART(\'hour\', "root".settlementDateTime - now()))) * 60 + (DATE_PART(\'minute\', "root".settlementDateTime - now()))) * 60 + (DATE_PART(\'second\', "root".settlementDateTime - now()))) * 1000 + (DATE_PART(\'milliseconds\', "root".settlementDateTime - now()))) as "DiffMilliseconds" from tradeTable as "root"', $result);
+   assertEquals('select cast(cast(cast(cast(cast(DATE_PART(\'day\', "root".settlementDateTime - now()) as BIGINT) * 24 + (DATE_PART(\'hour\', "root".settlementDateTime - now())) as BIGINT) * 60 + (DATE_PART(\'minute\', "root".settlementDateTime - now())) as BIGINT) * 60 + (DATE_PART(\'second\', "root".settlementDateTime - now())) as BIGINT) * 1000 + (DATE_PART(\'milliseconds\', "root".settlementDateTime - now())) as BIGINT) as "DiffMilliseconds" from tradeTable as "root"', $result);
 }
 
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testDayOfYear():Boolean[1]
 {
    let expected = [
-      pair(DatabaseType.Postgres, 'select date_part(\'doy\', "root".tradeDate) as "doy" from tradeTable as "root"')
+      pair(DatabaseType.Postgres, 'select cast(date_part(\'doy\', "root".tradeDate) as BIGINT) as "doy" from tradeTable as "root"')
    ];
 
    $expected->map(p|
@@ -278,7 +278,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testT
 
    let expected = [
     pair(DatabaseType.Postgres, $common)
-  ];
+   ];
 
    $expected->map(p|
       let driver = $p.first;
@@ -350,7 +350,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testS
                                                    ],
                                                    ['a']),
                               simpleRelationalMapping, DatabaseType.Postgres, postgresExtensions());
-   assertEquals('select (Date(Timestamp\'2011-12-30 08:55:00.0\') + (INTERVAL \'1 HOURS\' * date_part(\'hour\', Timestamp\'2011-12-30 08:55:00.0\'))) as "a" from personTable as "root"', $result);
+   assertEquals('select (Date(Timestamp\'2011-12-30 08:55:00.0\') + (INTERVAL \'1 HOURS\' * cast(date_part(\'hour\', Timestamp\'2011-12-30 08:55:00.0\') as BIGINT))) as "a" from personTable as "root"', $result);
 }
 
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testSqlGenerationForAdjustStrictDateUsageInProjectionForPostgres():Boolean[1]
@@ -511,7 +511,7 @@ function <<test.Test>> meta::relational::functions::sqlToString::postgres::testT
 function <<test.Test>> meta::relational::functions::sqlToString::postgres::testToSqlGenerationMinuteSecond():Boolean[1]
 {
    let expected = [
-   pair(DatabaseType.Postgres, 'select date_part(\'minute\', "root".settlementDateTime) as "settlementDateTimeMinute", date_part(\'second\', "root".settlementDateTime) as "settlementDateTimeSecond" from tradeTable as "root"')
+   pair(DatabaseType.Postgres, 'select cast(date_part(\'minute\', "root".settlementDateTime) as BIGINT) as "settlementDateTimeMinute", cast(date_part(\'second\', "root".settlementDateTime) as BIGINT) as "settlementDateTimeSecond" from tradeTable as "root"')
    ];
 
    $expected->map(p|
