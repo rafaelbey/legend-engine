@@ -1,0 +1,17 @@
+[package]
+name = "legend-pure-parser-jni"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+jni = "0.21"
+legend-pure-parser-parser = { path = "../parser" }
+legend-pure-parser-emitter = { path = "../emitter" }
+serde_json.workspace = true
+
+# Built-in plugins reference
+legend-pure-parser-relation-accessor = { path = "../../plugins/relation-accessor" }

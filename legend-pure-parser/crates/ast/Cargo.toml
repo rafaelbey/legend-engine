@@ -1,0 +1,9 @@
+[package]
+name = "legend-pure-parser-ast"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+### Core dependencies for AST
+smol_str = "0.2"

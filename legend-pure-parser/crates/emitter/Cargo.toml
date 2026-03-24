@@ -1,0 +1,12 @@
+[package]
+name = "legend-pure-parser-emitter"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+legend-pure-parser-ast = { path = "../ast" }
+thiserror = "1.0"
+smol_str = "0.2"

@@ -1,0 +1,10 @@
+[package]
+name = "legend-pure-parser-relation-accessor"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+linkme = "0.3"
+legend-pure-parser-ast = { path = "../../crates/ast" }
+legend-pure-parser-parser = { path = "../../crates/parser" }

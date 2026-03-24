@@ -49,6 +49,8 @@ public class PureGrammarParser
 {
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PureGrammarParser.class);
     private static final String DEFAULT_SECTION_BEGIN = "\n###" + DomainParser.name + "\n";
+    public static boolean USE_RUST_PARSER = true;
+    private static final com.fasterxml.jackson.databind.ObjectMapper RUST_PARSER_MAPPER = org.finos.legend.engine.shared.core.ObjectMapperFactory.getNewStandardObjectMapperWithPureProtocolExtensionSupports();
 
     private final DEPRECATED_PureGrammarParserLibrary parsers;
     private final PureGrammarParserExtensions extensions;
@@ -108,6 +110,40 @@ public class PureGrammarParser
     private PureModelContextData parse(String code, DEPRECATED_PureGrammarParserLibrary parserLibrary, String sourceId, int lineOffset, int columnOffset, boolean returnSourceInfo)
     {
         String fullCode = DEFAULT_SECTION_BEGIN + code;
+        if (USE_RUST_PARSER)
+        {
+            try
+            {
+                String json = new RustPureParser().parse(code);
+                if (json.contains("\"engineError\""))
+                {
+                    com.fasterxml.jackson.databind.JsonNode node = RUST_PARSER_MAPPER.readTree(json);
+                    String message = node.get("message").asText();
+                    SourceInformation sourceInfo = new SourceInformation(
+                            "",
+                            node.get("startLine").asInt(),
+                            node.get("startColumn").asInt(),
+                            node.get("endLine").asInt(),
+                            node.get("endColumn").asInt()
+                    );
+                    throw new EngineException(message, sourceInfo, EngineErrorType.PARSER);
+                }
+                if (json.contains("\"error\""))
+                {
+                    throw new RuntimeException("Rust parser error: " + json);
+                }
+                return RUST_PARSER_MAPPER.readValue(json, PureModelContextData.class);
+            }
+            catch (EngineException e)
+            {
+                throw e;
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException("Failed to invoke or parse from Rust parser:\n" + e.getMessage(), e);
+            }
+        }
+
         PureGrammarParserContext parserContext = new PureGrammarParserContext(this.extensions);
         ParseTreeWalkerSourceInformation walkerSourceInformation = new ParseTreeWalkerSourceInformation.Builder(sourceId, lineOffset, columnOffset).withReturnSourceInfo(returnSourceInfo).build();
         // init the parser

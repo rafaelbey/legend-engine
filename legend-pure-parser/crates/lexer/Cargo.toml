@@ -1,0 +1,10 @@
+[package]
+name = "legend-pure-parser-lexer"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+logos = "0.14"
+smol_str = "0.2"
+legend-pure-parser-ast = { path = "../ast" }
