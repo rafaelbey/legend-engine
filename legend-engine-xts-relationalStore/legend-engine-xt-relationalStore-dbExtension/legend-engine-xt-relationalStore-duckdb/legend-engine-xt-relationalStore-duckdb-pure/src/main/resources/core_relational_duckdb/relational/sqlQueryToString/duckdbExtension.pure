@@ -190,7 +190,7 @@ function <<access.private>> meta::relational::functions::sqlQueryToString::duckD
     dynaFnToSql('firstDayOfThisMonth',    $allStates,            ^ToSql(format='date_trunc(\'month\', now())')),
     dynaFnToSql('firstDayOfThisQuarter',  $allStates,            ^ToSql(format='date_trunc(\'quarter\', now())')),
     dynaFnToSql('firstDayOfThisYear',     $allStates,            ^ToSql(format='date_trunc(\'year\',now())')),
-    dynaFnToSql('firstDayOfWeek',         $allStates,            ^ToSql(format='date_add(%s, to_days(cast(-(isodow(%s)-1) as integer)))', transform={p:String[1] | $p->repeat(2)})),
+    dynaFnToSql('firstDayOfWeek',         $allStates,            ^ToSql(format='date_add(%s, to_days(cast(-(isodow(%s)-1) as BIGINT)))', transform={p:String[1] | $p->repeat(2)})),
     dynaFnToSql('firstDayOfYear',         $allStates,            ^ToSql(format='date_trunc(\'year\', %s)', transform={p:String[1] | $p->repeat(1)})),
     dynaFnToSql('firstHourOfDay',         $allStates,            ^ToSql(format='CAST(date_trunc(\'day\', %s) AS TIMESTAMP_S)', transform={p:String[1] | $p->repeat(1)})),
     dynaFnToSql('firstMillisecondOfSecond',$allStates,           ^ToSql(format='date_trunc(\'second\', %s)', transform={p:String[1] | $p->repeat(1)})),
@@ -211,7 +211,7 @@ function <<access.private>> meta::relational::functions::sqlQueryToString::duckD
     dynaFnToSql('maxBy',                  $allStates,            ^ToSql(format='MAX_BY(%s)', transform={p:String[*] | $p->joinStrings(', ')})),
     dynaFnToSql('minBy',                  $allStates,            ^ToSql(format='MIN_BY(%s)', transform={p:String[*] | $p->joinStrings(', ')})),
     dynaFnToSql('minute',                 $allStates,            ^ToSql(format='minute(%s)')),
-    dynaFnToSql('mod',                    $allStates,            ^ToSql(format='cast(fmod(%s,%s) as integer)')),
+    dynaFnToSql('mod',                    $allStates,            ^ToSql(format='cast(fmod(%s,%s) as BIGINT)')),
     dynaFnToSql('month',                  $allStates,            ^ToSql(format='month(%s)')),
     dynaFnToSql('monthNumber',            $allStates,            ^ToSql(format='month(%s)')),
     dynaFnToSql('monthName',              $allStates,            ^ToSql(format='monthname(%s)')),
@@ -220,6 +220,7 @@ function <<access.private>> meta::relational::functions::sqlQueryToString::duckD
     // dynaFnToSql('parseDate',              $allStates,            ^ToSql(format='parsedatetime(%s,%s)')),
     dynaFnToSql('parseDecimal',           $allStates,            ^ToSql(format='%s', transform={p:String[*] |$p->transformParseDecimal()})),
     dynaFnToSql('parseFloat',             $allStates,            ^ToSql(format='cast(%s as float)')),
+    dynaFnToSql('floor',                  $allStates,            ^ToSql(format='cast(floor(%s) as BIGINT)')),
     dynaFnToSql('parseInteger',           $allStates,            ^ToSql(format='cast(%s as BIGINT)')),
     dynaFnToSql('parseJson',              $allStates,            ^ToSql(format='cast(%s as JSON)')),
     dynaFnToSql('position',               $allStates,            ^ToSql(format='position(%s IN %s)')),
@@ -278,7 +279,7 @@ function <<access.private>> meta::relational::functions::sqlQueryToString::duckD
   if ($returnType->in(['DATE','DATETIME', 'TIMESTAMP']), | 'cast(' + $elementAccess + ' as TIMESTAMP)', |
   if ($returnType == 'BOOLEAN', | 'cast(' + $elementAccess + ' as BOOLEAN)', |
   if ($returnType == 'FLOAT', | 'cast(' + $elementAccess + ' as DOUBLE)', |
-  if ($returnType == 'INTEGER', | 'cast(' + $elementAccess + 'as INTEGER)', |
+  if ($returnType == 'INTEGER', | 'cast(' + $elementAccess + 'as BIGINT)', |
   $elementAccess)))));
 }
 
@@ -371,9 +372,9 @@ function <<access.private>> meta::relational::functions::sqlQueryToString::duckD
 
 function <<access.private>> meta::relational::functions::sqlQueryToString::duckDB::processDateDiffDurationUnitForDuckDB(durationUnit:String[1]):String[1]
 {
-   let durationEnumNames = [DurationUnit.YEARS,DurationUnit.MONTHS,DurationUnit.WEEKS,DurationUnit.DAYS,DurationUnit.HOURS,DurationUnit.MINUTES,DurationUnit.SECONDS,DurationUnit.MILLISECONDS]->map(e|$e->toString());
-   let durationDbNames = ['year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond'];
-   $durationEnumNames->zip($durationDbNames)->filter(h | $h.first == $durationUnit).second->toOne();
+   let durationEnumNames = [DurationUnit.YEARS,DurationUnit.MONTHS,DurationUnit.WEEKS,DurationUnit.DAYS,DurationUnit.HOURS,DurationUnit.MINUTES,DurationUnit.SECONDS,DurationUnit.MILLISECONDS,DurationUnit.MICROSECONDS]->map(e|$e->toString());
+   let durationDbNames = ['year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond'];
+   $durationEnumNames->zip($durationDbNames)->filter(h | $h.first == $durationUnit).second->toOne('Unit not supported on DuckDb: %s'->format($durationUnit));
 }
 
 function meta::relational::functions::sqlQueryToString::duckDB::constructIntervalFunction(unit:String[1], i:String[1]):String[1]

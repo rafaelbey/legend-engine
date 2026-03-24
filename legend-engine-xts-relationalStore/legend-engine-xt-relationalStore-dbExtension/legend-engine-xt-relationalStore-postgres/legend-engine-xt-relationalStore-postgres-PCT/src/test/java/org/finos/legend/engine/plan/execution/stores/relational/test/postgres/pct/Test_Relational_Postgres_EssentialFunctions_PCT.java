@@ -186,9 +186,6 @@ public class Test_Relational_Postgres_EssentialFunctions_PCT extends PCTReportCo
 
             one("meta::pure::functions::string::tests::format::testFormatInEval_Function_1__Boolean_1_", "\"No SQL translation exists for the PURE function 'format_String_1__Any_MANY__String_1_'.", AdapterQualifier.unsupportedFeature),
 
-            // Rem
-            one("meta::pure::functions::math::tests::rem::testRemWithDecimals_Function_1__Boolean_1_", "\"\nexpected: 0.14D\nactual:   0.14\""),
-
             one("meta::pure::functions::math::tests::round::testPositiveFloatRoundHalfEvenDown_Function_1__Boolean_1_", "\"\nexpected: 16\nactual:   17\""),
             one("meta::pure::functions::math::tests::round::testNegativeFloatRoundHalfEvenUp_Function_1__Boolean_1_", "\"\nexpected: -16\nactual:   -17\""),
 
@@ -209,7 +206,12 @@ public class Test_Relational_Postgres_EssentialFunctions_PCT extends PCTReportCo
             //Date
             one("meta::pure::functions::date::tests::testAdjustByDaysBigNumber_Function_1__Boolean_1_", "org.postgresql.util.PSQLException: ERROR: interval out of range"),
             one("meta::pure::functions::date::tests::testAdjustByHoursBigNumber_Function_1__Boolean_1_", "org.postgresql.util.PSQLException: ERROR: interval out of range"),
-            one("meta::pure::functions::date::tests::testAdjustByMicrosecondsBigNumber_Function_1__Boolean_1_", "\"\nexpected: %2021-06-21T09:37:37.4990000+0000\nactual:   %2021-06-21T09:37:37.499+0000\""),
+            one("meta::pure::functions::date::tests::testAdjustByMicrosecondsBigNumber_Function_1__Boolean_1_", "org.postgresql.util.PSQLException: ERROR: integer out of range"),
+            one("meta::pure::functions::date::tests::testAdjustByNanosecondsBigNumber_Function_1__Boolean_1_", "org.postgresql.util.PSQLException: ERROR: invalid input syntax for type interval: \"1 NANOSECONDS\"\n  Position: 62"),
+            one("meta::pure::functions::date::tests::testAdjustByNanoseconds_Function_1__Boolean_1_", "org.postgresql.util.PSQLException: ERROR: invalid input syntax for type interval: \"1 NANOSECONDS\"\n  Position: 62"),
+            one("meta::pure::functions::date::tests::testDateDiffMicroseconds_Function_1__Boolean_1_", "\"The system is trying to get an element at offset -1 where the collection is of size 8\""),
+            one("meta::pure::functions::date::tests::testDateDiffNanoseconds_Function_1__Boolean_1_", "\"The system is trying to get an element at offset -1 where the collection is of size 8\""),
+
             one("meta::pure::functions::date::tests::testAdjustByMinutesBigNumber_Function_1__Boolean_1_", "org.postgresql.util.PSQLException: ERROR: timestamp out of range"),
             one("meta::pure::functions::date::tests::testAdjustByMonthsBigNumber_Function_1__Boolean_1_", "org.postgresql.util.PSQLException: ERROR: interval out of range"),
             one("meta::pure::functions::date::tests::testAdjustReflectiveEvaluation_Function_1__Boolean_1_", "Can't find a match for function 'meta::pure::functions::lang::eval(NativeFunction<{Date[1], Integer[1], DurationUnit[1]->Date[1]}>[1],StrictDate[1],Integer[1],DurationUnit[1])'."),
@@ -230,7 +232,6 @@ public class Test_Relational_Postgres_EssentialFunctions_PCT extends PCTReportCo
             one("meta::pure::functions::date::tests::testHasSubsecond_Function_1__Boolean_1_", "\"No SQL translation exists for the PURE function 'hasSubsecond_Date_1__Boolean_1_'.", AdapterQualifier.unsupportedFeature),
             one("meta::pure::functions::date::tests::testAdjustByMonths_Function_1__Boolean_1_", "Date has no day: 2012-03", AdapterQualifier.unsupportedFeature),
             one("meta::pure::functions::date::tests::testAdjustByWeeksBigNumber_Function_1__Boolean_1_", "org.postgresql.util.PSQLException: ERROR: interval out of range"),
-            one("meta::pure::functions::date::tests::testAdjustByYears_Function_1__Boolean_1_", "\"Ensure the target system understands Year or Year-month semantic.\"", AdapterQualifier.unsupportedFeature),
             one("meta::pure::functions::date::tests::testDateDiffWeeks_Function_1__Boolean_1_", "org.postgresql.util.PSQLException: ERROR: function date_part(unknown, integer) does not exist\n  Hint: No function matches the given name and argument types. You might need to add explicit type casts.\n  Position: 15"),
             one("meta::pure::functions::date::tests::testDateDiffYears_Function_1__Boolean_1_", "\"Ensure the target system understands Year or Year-month semantic.\"", AdapterQualifier.unsupportedFeature),
             one("meta::pure::functions::date::tests::testDatePartYearMonthOnly_Function_1__Boolean_1_", "Date has no day: 1973-11", AdapterQualifier.unsupportedFeature),
@@ -279,7 +280,6 @@ public class Test_Relational_Postgres_EssentialFunctions_PCT extends PCTReportCo
             // ParseDecimal
             one("meta::pure::functions::string::tests::parseDecimal::testParseDecimal_Function_1__Boolean_1_", "org.postgresql.util.PSQLException: ERROR: invalid input syntax for type numeric: \"3.14159d\""),
             one("meta::pure::functions::string::tests::parseDecimal::testParseDecimalWithPrecisionScale_Function_1__Boolean_1_", "\"\nexpected: 123.12300D\nactual:   123.123D\""),
-            one("meta::pure::functions::string::tests::parseDecimal::testParseZero_Function_1__Boolean_1_", "\"\nexpected: 0.000D\nactual:   0.0D\""),
 
             //variant
             one("meta::pure::functions::collection::tests::keys::testKeys_Function_1__Boolean_1_", "\"[unsupported-api] The function 'keys' (state: [Select, false]) is not supported yet\""),

@@ -195,15 +195,18 @@ public class Test_Relational_ClickHouse_EssentialFunctions_PCT extends PCTReport
             one("meta::pure::functions::collection::tests::zip::testZipSecondListsIsOfPairs_Function_1__Boolean_1_", "\"No SQL translation exists for the PURE function 'zip_T_MANY__U_MANY__Pair_MANY_'. \nIf you would like to add a SQL translation for the function then follow the step-by-step guide on the PURE wiki.\""),
 
             // AdjustBy
-            one("meta::pure::functions::date::tests::testAdjustByDaysBigNumber_Function_1__Boolean_1_", "\"\nexpected: %33803336-12-17\nactual:   %2035-12-18\""),
-            one("meta::pure::functions::date::tests::testAdjustByHoursBigNumber_Function_1__Boolean_1_", "\"\nexpected: %1410404-07-12T00:00:00+0000\nactual:   %1410404-07-12\""),
-            one("meta::pure::functions::date::tests::testAdjustByMicrosecondsBigNumber_Function_1__Boolean_1_", "\"\nexpected: %2021-06-21T09:37:37.4990000+0000\nactual:   %2021-06-21T09:37:37.499+0000\""),
-            one("meta::pure::functions::date::tests::testAdjustByMinutesBigNumber_Function_1__Boolean_1_", "\"\nexpected: %-21457-01-08T20:48:00+0000\nactual:   %21459-07-29T20:48:00+0000\""),
-            one("meta::pure::functions::date::tests::testAdjustByMonthsBigNumber_Function_1__Boolean_1_", "\"\nexpected: %800002016-02-29\nactual:   %2120-07-26\""),
+            one("meta::pure::functions::date::tests::testAdjustByDaysBigNumber_Function_1__Boolean_1_", "\"expected equivalent up to DAYS: <%33803336-12-17> but was: <%2035-12-18>\""),
+            one("meta::pure::functions::date::tests::testAdjustByHoursBigNumber_Function_1__Boolean_1_", "\"expected equivalent up to MILLISECONDS: <%-1406373-10-18T00:00:00+0000> but was: <%1406403-11-29>\""),
+            one("meta::pure::functions::date::tests::testAdjustByMicrosecondsBigNumber_Function_1__Boolean_1_", "\"expected equivalent up to MICROSECONDS: <%2021-06-21T09:37:37.499000+0000> but was: <%1970-01-01T00:35:47.483647+0000>\""),
+            one("meta::pure::functions::date::tests::testAdjustByMinutesBigNumber_Function_1__Boolean_1_", "\"expected equivalent up to MILLISECONDS: <%-21457-01-08T20:48:00+0000> but was: <%21459-07-29T20:48:00+0000>\""),
+            one("meta::pure::functions::date::tests::testAdjustByMonthsBigNumber_Function_1__Boolean_1_", "\"expected equivalent up to DAYS: <%800002016-02-29> but was: <%2120-07-26>\""),
             one("meta::pure::functions::date::tests::testAdjustByMonths_Function_1__Boolean_1_", "Date has no day: 2012-03"),
-            one("meta::pure::functions::date::tests::testAdjustByWeeksBigNumber_Function_1__Boolean_1_", "\"\nexpected: %236611261-10-03\nactual:   %1975-05-03\""),
-            one("meta::pure::functions::date::tests::testAdjustByYears_Function_1__Boolean_1_", "Ensure the target system understands Year or Year-month semantic."),
+            one("meta::pure::functions::date::tests::testAdjustByWeeksBigNumber_Function_1__Boolean_1_", "\"expected equivalent up to DAYS: <%236611261-10-03> but was: <%1975-05-03>\""),
             one("meta::pure::functions::date::tests::testAdjustReflectiveEvaluation_Function_1__Boolean_1_", "Can't find a match for function 'meta::pure::functions::lang::eval(NativeFunction<{Date[1], Integer[1], DurationUnit[1]->Date[1]}>[1],StrictDate[1],Integer[1],DurationUnit[1])"),
+            one("meta::pure::functions::date::tests::testAdjustByNanosecondsBigNumber_Function_1__Boolean_1_", "\"Unit not found: NANOSECONDS\""),
+            one("meta::pure::functions::date::tests::testAdjustByNanoseconds_Function_1__Boolean_1_", "\"Unit not found: NANOSECONDS\""),
+            one("meta::pure::functions::date::tests::testDateDiffMicroseconds_Function_1__Boolean_1_", "\"\nexpected: 1\nactual:   0\""),
+            one("meta::pure::functions::date::tests::testDateDiffNanoseconds_Function_1__Boolean_1_", "\"Unit not found: NANOSECONDS\""),
 
             // DateDiff
             one("meta::pure::functions::date::tests::testDateDiffWeeks_Function_1__Boolean_1_", "\"\nexpected: 1\nactual:   0\""),
@@ -270,22 +273,11 @@ public class Test_Relational_ClickHouse_EssentialFunctions_PCT extends PCTReport
             one("meta::pure::functions::lang::tests::match::testMatchZeroWithZero_Function_1__Boolean_1_", "\"Match does not support Non-Primitive return type..! Current return type : Any\""),
             one("meta::pure::functions::lang::tests::match::testMatch_Function_1__Boolean_1_", "\"type not supported: meta::pure::functions::lang::tests::match::MA_GeographicEntityType\""),
 
-            // Exp
-            one("meta::pure::functions::math::tests::exp::testNumberExp_Function_1__Boolean_1_", "\"\nexpected: 2.718281828459045\nactual:   2.718281828460626\""),
-            one("meta::pure::functions::math::tests::exp::testSimple_Function_1__Boolean_1_", "\"\nexpected: 2.718281828459045\nactual:   2.718281828460626\""),
-
-            // Log
-            one("meta::pure::functions::math::tests::log::testNumberLog_Function_1__Boolean_1_", "\"\nexpected: 1.0\nactual:   0.9999999987491066\""),
-            one("meta::pure::functions::math::tests::log::testSimple_Function_1__Boolean_1_", "\"\nexpected: 4.0\nactual:   3.99999999928146\""),
-
             // Pow
             one("meta::pure::functions::math::tests::pow::testNumberPow_Function_1__Boolean_1_", "\"\nexpected: 9.0\nactual:   27.0\""),
 
             // Rem
             one("meta::pure::functions::math::tests::rem::testRemWithDecimals_Function_1__Boolean_1_", "\"\nexpected: 0.14D\nactual:   0.14000000000000012\""),
-
-            // ToDecimal
-            one("meta::pure::functions::math::tests::toDecimal::testIntToDecimal_Function_1__Boolean_1_", "\"\nexpected: 8D\nactual:   8.0D\""),
 
             // Contains
             one("meta::pure::functions::string::tests::contains::testFalseContains_Function_1__Boolean_1_", "class java.lang.Long cannot be cast to class java.lang.Boolean (java.lang.Long and java.lang.Boolean are in module java.base of loader 'bootstrap')"),
@@ -331,7 +323,6 @@ public class Test_Relational_ClickHouse_EssentialFunctions_PCT extends PCTReport
             // ParseDecimal
             one("meta::pure::functions::string::tests::parseDecimal::testParseDecimalWithPrecisionScale_Function_1__Boolean_1_", "\"\nexpected: 123.13D\nactual:   123.12D\""),
             one("meta::pure::functions::string::tests::parseDecimal::testParseDecimal_Function_1__Boolean_1_", "java.sql.SQLException: Code: 6. DB::Exception: Cannot parse string '3.14159d' as Decimal(10, 0): syntax error at position 7 (parsed just '3.14159'): In scope SELECT CAST('3.14159d', 'Decimal'). (CANNOT_PARSE_TEXT) (version 25.1.1.4165 (official build)) "),
-            one("meta::pure::functions::string::tests::parseDecimal::testParseZero_Function_1__Boolean_1_", "\"\nexpected: 0.0D\nactual:   0D\""),
 
             // ParseInteger
             one("meta::pure::functions::string::tests::parseInteger::testParseInteger_Function_1__Boolean_1_", "\"\nexpected: 9999999999999992\nactual:   1874919416\""),
