@@ -8,7 +8,9 @@ pub enum Expression {
     Lambda(Lambda),
     Application(FunctionApplication),
     Property(PropertyAccess),
+    // todo?
     Literal(Literal),
+    // todo?
     Collection(Vec<Expression>),
     ColumnSpec(ColumnSpec),
 
@@ -33,6 +35,8 @@ pub enum Expression {
         left: Box<Expression>,
         right: Box<Expression>,
     },
+
+    // todo support other bitwise operators?
 }
 
 pub struct Lambda {

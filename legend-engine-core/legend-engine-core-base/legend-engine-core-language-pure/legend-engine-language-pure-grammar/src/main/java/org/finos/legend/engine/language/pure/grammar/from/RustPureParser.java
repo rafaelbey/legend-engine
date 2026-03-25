@@ -74,5 +74,5 @@ public class RustPureParser
         }
     }
 
-    public native String parse(String input);
+    public native String parse(String input, String availablePlugins);
 }

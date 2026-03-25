@@ -34,7 +34,11 @@ pub extern "system" fn Java_org_finos_legend_engine_language_pure_grammar_from_R
             }
         }
         Err(legend_pure_parser_parser::ParseError::EngineError(msg, info)) => {
-            let end_col = if info.end_column > 0 { info.end_column - 1 } else { info.end_column };
+            let end_col = if info.end_column > 0 {
+                info.end_column - 1
+            } else {
+                info.end_column
+            };
             json!({
                 "engineError": true,
                 "message": msg,
@@ -43,7 +47,7 @@ pub extern "system" fn Java_org_finos_legend_engine_language_pure_grammar_from_R
                 "endLine": info.end_line,
                 "endColumn": end_col.max(info.start_column)
             })
-        },
+        }
         Err(e) => json!({
             "error": format!("Parse error: {:?}", e)
         }),

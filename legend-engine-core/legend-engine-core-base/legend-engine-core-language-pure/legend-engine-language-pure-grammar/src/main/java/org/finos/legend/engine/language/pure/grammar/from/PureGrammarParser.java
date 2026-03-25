@@ -114,7 +114,10 @@ public class PureGrammarParser
         {
             try
             {
-                String json = new RustPureParser().parse(code);
+                java.util.List<String> extKeys = org.eclipse.collections.api.factory.Lists.mutable.withAll(this.extensions.getExtraEmbeddedPureParsers()).collect(org.finos.legend.engine.language.pure.grammar.from.extension.EmbeddedPureParser::getType);
+                extKeys.sort(String::compareTo);
+                String availableExtensions = String.join(",", extKeys);
+                String json = new RustPureParser().parse(code, availableExtensions);
                 if (json.contains("\"engineError\""))
                 {
                     com.fasterxml.jackson.databind.JsonNode node = RUST_PARSER_MAPPER.readTree(json);

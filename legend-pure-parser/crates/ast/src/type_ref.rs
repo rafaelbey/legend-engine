@@ -1,5 +1,7 @@
 use crate::SourceInfo;
 
+// todo assess these...
+
 /// Represents a package path like `meta::pure::mapping`
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackagePath {
@@ -21,6 +23,7 @@ impl Default for PackagePath {
 pub enum Type {
     Packageable(PackageableType),
     // Future: RelationType, UnitType, etc.
+    // todo FunctionType?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

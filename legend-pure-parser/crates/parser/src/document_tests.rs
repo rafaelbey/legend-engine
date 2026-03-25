@@ -65,3 +65,31 @@ fn test_parse_profile() {
         panic!("Expected Profile");
     }
 }
+
+#[test]
+fn test_nested_unknown_island_grammar() {
+    let code = "
+    ###Pure
+    function f(): Any[*]
+    {
+       let x = #Unknown{My random Parser #Test{ OK OK } Yo}#
+    }
+    ";
+    
+    let registry = Arc::new(PluginRegistry::new());
+    let mut parser = Parser::new("test.pure", code, registry);
+    let result = parser.parse_document();
+    
+    assert!(result.is_err(), "Expected an error for unknown island grammar");
+    if let Err(e) = result {
+        if let crate::ParseError::EngineError(msg, source_info) = e {
+            assert!(msg.contains("Can't find an embedded Pure parser for the type 'Unknown'"));
+            assert!(msg.contains("available ones: []"));
+            // Verify source info covers the whole island
+            assert_eq!(source_info.start_line, 5); // start of #Unknown{
+            assert_eq!(source_info.end_line, 6); // end of }#
+        } else {
+            panic!("Expected EngineError, got {:?}", e);
+        }
+    }
+}

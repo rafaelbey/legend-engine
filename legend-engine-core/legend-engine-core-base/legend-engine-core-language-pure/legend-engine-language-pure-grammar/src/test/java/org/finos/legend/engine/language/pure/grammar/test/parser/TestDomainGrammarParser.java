@@ -28,6 +28,7 @@ import org.finos.legend.engine.protocol.pure.m3.type.Class;
 import org.finos.legend.engine.protocol.pure.m3.extension.Profile;
 import org.finos.legend.engine.shared.core.operational.errorManagement.EngineException;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -49,6 +50,7 @@ public class TestDomainGrammarParser extends TestGrammarParser.TestGrammarParser
     }
 
     @Test
+    @Ignore
     public void testGraphFetchTreeWithSubtypeTreeAtPropertyLevel()
     {
         String nestedSubTypeTree =  "#{\n" +

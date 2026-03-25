@@ -6,11 +6,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use thiserror::Error;
 
+#[cfg(test)]
+mod document_tests;
 pub mod expr;
 #[cfg(test)]
 mod expr_tests;
-#[cfg(test)]
-mod document_tests;
 
 #[derive(Error, Debug)]
 pub enum ParseError {
@@ -156,7 +156,9 @@ impl<'a> Parser<'a> {
             match self.tokens[self.pos].token {
                 Token::KeywordClass => elements.push(Element::Class(self.parse_class()?)),
                 Token::KeywordProfile => elements.push(Element::Profile(self.parse_profile()?)),
-                Token::KeywordFunction => { self.parse_function()?; /* Stub: ignore result for now */ },
+                Token::KeywordFunction => {
+                    self.parse_function()?; /* Stub: ignore result for now */
+                }
                 Token::SectionHeader(_) => break, // Hit a new section
                 _ => {
                     return Err(ParseError::UnexpectedToken(
@@ -211,12 +213,20 @@ impl<'a> Parser<'a> {
 
         // 3. Parse properties (stub for properties and functions within class body)
         while self.pos < self.tokens.len() && self.tokens[self.pos].token != Token::RBrace {
-            if self.tokens[self.pos].token == Token::LBrace || self.tokens[self.pos].token == Token::LDoubleAngle || matches!(self.tokens[self.pos].token, Token::Ident(_)) {
-                // Determine if it's a property or a function by looking ahead for `(` before `:` 
+            if self.tokens[self.pos].token == Token::LBrace
+                || self.tokens[self.pos].token == Token::LDoubleAngle
+                || matches!(self.tokens[self.pos].token, Token::Ident(_))
+            {
+                // Determine if it's a property or a function by looking ahead for `(` before `:`
                 let mut is_func = false;
                 for i in self.pos..self.tokens.len() {
-                    if self.tokens[i].token == Token::LParen { is_func = true; break; }
-                    if self.tokens[i].token == Token::Colon { break; }
+                    if self.tokens[i].token == Token::LParen {
+                        is_func = true;
+                        break;
+                    }
+                    if self.tokens[i].token == Token::Colon {
+                        break;
+                    }
                 }
 
                 if is_func {
@@ -229,14 +239,20 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let end_info = if self.pos < self.tokens.len() { self.tokens[self.pos].source_info.clone() } else { self.tokens.last().unwrap().source_info.clone() };
+        let end_info = if self.pos < self.tokens.len() {
+            self.tokens[self.pos].source_info.clone()
+        } else {
+            self.tokens.last().unwrap().source_info.clone()
+        };
         // 4. Expect '}'
         self.expect_token(Token::RBrace)?;
 
         let source_info = SourceInfo {
             source_id: start_info.source_id.clone(),
-            start_line: start_info.start_line, end_line: end_info.end_line, 
-            start_column: start_info.start_column, end_column: end_info.end_column
+            start_line: start_info.start_line,
+            end_line: end_info.end_line,
+            start_column: start_info.start_column,
+            end_column: end_info.end_column,
         };
 
         Ok(ClassDef {
@@ -270,7 +286,8 @@ impl<'a> Parser<'a> {
         let mut st = Vec::new();
         if self.pos < self.tokens.len() && self.tokens[self.pos].token == Token::LDoubleAngle {
             self.pos += 1;
-            while self.pos < self.tokens.len() && self.tokens[self.pos].token != Token::RDoubleAngle {
+            while self.pos < self.tokens.len() && self.tokens[self.pos].token != Token::RDoubleAngle
+            {
                 let prof = match &self.tokens[self.pos].token {
                     Token::Ident(p) => Some(p.to_string()),
                     _ => None,
@@ -288,7 +305,7 @@ impl<'a> Parser<'a> {
                                 profile: prof_str,
                                 value: SmolStr::new(val_str),
                                 profile_source_info: SourceInfo::dummy(),
-                                source_info: SourceInfo::dummy()
+                                source_info: SourceInfo::dummy(),
                             });
                             self.pos += 1;
                         }
@@ -308,29 +325,40 @@ impl<'a> Parser<'a> {
         if self.pos < self.tokens.len() && self.tokens[self.pos].token == Token::LBrace {
             let mut is_tv = false;
             if self.pos + 2 < self.tokens.len() {
-                if matches!(self.tokens[self.pos + 1].token, Token::Ident(_)) && self.tokens[self.pos + 2].token == Token::Dot {
+                if matches!(self.tokens[self.pos + 1].token, Token::Ident(_))
+                    && self.tokens[self.pos + 2].token == Token::Dot
+                {
                     is_tv = true;
                 }
             }
             if is_tv {
                 self.pos += 1;
                 while self.pos < self.tokens.len() && self.tokens[self.pos].token != Token::RBrace {
-                    let prof = match &self.tokens[self.pos].token { Token::Ident(p) => Some(p.to_string()), _ => None };
+                    let prof = match &self.tokens[self.pos].token {
+                        Token::Ident(p) => Some(p.to_string()),
+                        _ => None,
+                    };
                     if let Some(prof_str) = prof {
                         self.pos += 1;
                         if self.expect_token(Token::Dot).is_ok() {
-                            let tag = match &self.tokens[self.pos].token { Token::Ident(t) => Some(t.to_string()), _ => None };
+                            let tag = match &self.tokens[self.pos].token {
+                                Token::Ident(t) => Some(t.to_string()),
+                                _ => None,
+                            };
                             if let Some(tag_str) = tag {
                                 self.pos += 1;
                                 if self.expect_token(Token::Eq).is_ok() {
-                                    let val = match &self.tokens[self.pos].token { Token::StringLit(v) => Some(v.to_string()), _ => None };
+                                    let val = match &self.tokens[self.pos].token {
+                                        Token::StringLit(v) => Some(v.to_string()),
+                                        _ => None,
+                                    };
                                     if let Some(val_str) = val {
                                         tv.push(TaggedValue {
                                             profile: prof_str,
                                             profile_source_info: SourceInfo::dummy(),
                                             tag: SmolStr::new(tag_str),
                                             value: val_str,
-                                            source_info: SourceInfo::dummy()
+                                            source_info: SourceInfo::dummy(),
                                         });
                                         self.pos += 1;
                                     }
@@ -350,16 +378,32 @@ impl<'a> Parser<'a> {
 
     fn parse_function(&mut self) -> Result<(), ParseError> {
         self.pos += 1; // Consume 'function'
-        
+
         // consume name up to < or (
         while self.pos < self.tokens.len() && self.tokens[self.pos].token != Token::LBrace {
             if self.tokens[self.pos].token == Token::Lt {
                 let lt_info = self.tokens[self.pos].source_info.clone();
                 let mut temp_pos = self.pos;
-                while temp_pos < self.tokens.len() && self.tokens[temp_pos].token != Token::Gt { temp_pos += 1; }
-                let end_info = if temp_pos < self.tokens.len() { self.tokens[temp_pos].source_info.clone() } else { lt_info.clone() };
-                let src = SourceInfo::new(lt_info.source_id, lt_info.start_line, lt_info.start_column, end_info.end_line, end_info.end_column);
-                return Err(ParseError::EngineError("Type and/or multiplicity parameters are not authorized in Legend Engine".to_string(), src));
+                while temp_pos < self.tokens.len() && self.tokens[temp_pos].token != Token::Gt {
+                    temp_pos += 1;
+                }
+                let end_info = if temp_pos < self.tokens.len() {
+                    self.tokens[temp_pos].source_info.clone()
+                } else {
+                    lt_info.clone()
+                };
+                let src = SourceInfo::new(
+                    lt_info.source_id,
+                    lt_info.start_line,
+                    lt_info.start_column,
+                    end_info.end_line,
+                    end_info.end_column,
+                );
+                return Err(ParseError::EngineError(
+                    "Type and/or multiplicity parameters are not authorized in Legend Engine"
+                        .to_string(),
+                    src,
+                ));
             }
             self.pos += 1;
         }
@@ -381,24 +425,83 @@ impl<'a> Parser<'a> {
             } else if self.tokens[self.pos].token == Token::Arrow {
                 // Peek ahead for subType and @
                 if self.pos + 2 < self.tokens.len() {
-                    if let Some(id) = self.tokens[self.pos+1].token.as_ident() {
+                    if let Some(id) = self.tokens[self.pos + 1].token.as_ident() {
                         if id == "subType" {
                             let src = self.tokens[self.pos].source_info.clone();
                             let mut end_pos = self.pos + 2;
                             // Search for closing parenthesis to capture full error bounds
-                            while end_pos < self.tokens.len() && self.tokens[end_pos].token != Token::RParen { end_pos += 1; }
-                            
-                            let end_info = if end_pos < self.tokens.len() { self.tokens[end_pos].source_info.clone() } else { self.tokens[self.pos+1].source_info.clone() };
-                            
-                            return Err(ParseError::EngineError("->subType() is supported only at root level".to_string(), 
-                                SourceInfo::new(src.source_id, src.start_line, src.start_column, end_info.end_line, end_info.end_column)));
+                            while end_pos < self.tokens.len()
+                                && self.tokens[end_pos].token != Token::RParen
+                            {
+                                end_pos += 1;
+                            }
+
+                            let end_info = if end_pos < self.tokens.len() {
+                                self.tokens[end_pos].source_info.clone()
+                            } else {
+                                self.tokens[self.pos + 1].source_info.clone()
+                            };
+
+                            return Err(ParseError::EngineError(
+                                "->subType() is supported only at root level".to_string(),
+                                SourceInfo::new(
+                                    src.source_id,
+                                    src.start_line,
+                                    src.start_column,
+                                    end_info.end_line,
+                                    end_info.end_column,
+                                ),
+                            ));
                         }
                     }
+                }
+            } else if let Token::IslandExtendedOpen(plugin_name) = &self.tokens[self.pos].token {
+                if !self
+                    .registry
+                    .island_plugins
+                    .contains_key(plugin_name.as_str())
+                {
+                    let src = self.tokens[self.pos].source_info.clone();
+                    let mut end_pos = self.pos + 1;
+                    let mut island_brace_depth = 1;
+                    // Scan forward to accurately close the island to get the end coordinates
+                    while end_pos < self.tokens.len() && island_brace_depth > 0 {
+                        if let Token::IslandExtendedOpen(_) = self.tokens[end_pos].token {
+                            island_brace_depth += 1;
+                        } else if self.tokens[end_pos].token == Token::IslandClose {
+                            island_brace_depth -= 1;
+                        }
+                        end_pos += 1;
+                    }
+                    let end_info = if end_pos <= self.tokens.len() {
+                        self.tokens[end_pos - 1].source_info.clone()
+                    } else {
+                        src.clone()
+                    };
+
+                    let mut available: Vec<String> =
+                        self.registry.island_plugins.keys().cloned().collect();
+                    available.sort();
+                    let msg = format!(
+                        "Can't find an embedded Pure parser for the type '{}' available ones: [{}]",
+                        plugin_name,
+                        available.join(", ")
+                    );
+                    return Err(ParseError::EngineError(
+                        msg,
+                        SourceInfo::new(
+                            src.source_id,
+                            src.start_line,
+                            src.start_column,
+                            end_info.end_line,
+                            end_info.end_column,
+                        ),
+                    ));
                 }
             }
             self.pos += 1;
         }
-        
+
         // Sometimes there are double brackets like '{ } { content }' in mapping functions
         if self.pos < self.tokens.len() && self.tokens[self.pos].token == Token::LBrace {
             brace_depth = 1;
@@ -419,10 +522,26 @@ impl<'a> Parser<'a> {
         if self.pos < self.tokens.len() && self.tokens[self.pos].token == Token::Lt {
             let lt_info = self.tokens[self.pos].source_info.clone();
             let mut temp_pos = self.pos;
-            while temp_pos < self.tokens.len() && self.tokens[temp_pos].token != Token::Gt { temp_pos += 1; }
-            let end_info = if temp_pos < self.tokens.len() { self.tokens[temp_pos].source_info.clone() } else { lt_info.clone() };
-            let src = SourceInfo::new(lt_info.source_id, lt_info.start_line, lt_info.start_column, end_info.end_line, end_info.end_column);
-            return Err(ParseError::EngineError("Type and/or multiplicity parameters are not authorized in Legend Engine".to_string(), src));
+            while temp_pos < self.tokens.len() && self.tokens[temp_pos].token != Token::Gt {
+                temp_pos += 1;
+            }
+            let end_info = if temp_pos < self.tokens.len() {
+                self.tokens[temp_pos].source_info.clone()
+            } else {
+                lt_info.clone()
+            };
+            let src = SourceInfo::new(
+                lt_info.source_id,
+                lt_info.start_line,
+                lt_info.start_column,
+                end_info.end_line,
+                end_info.end_column,
+            );
+            return Err(ParseError::EngineError(
+                "Type and/or multiplicity parameters are not authorized in Legend Engine"
+                    .to_string(),
+                src,
+            ));
         }
         Ok(())
     }
@@ -468,12 +587,15 @@ impl<'a> Parser<'a> {
                     break;
                 }
             } else {
-                return Err(ParseError::UnexpectedToken(self.tokens[self.pos].token.clone(), self.pos));
+                return Err(ParseError::UnexpectedToken(
+                    self.tokens[self.pos].token.clone(),
+                    self.pos,
+                ));
             }
         }
 
         self.expect_token(Token::LBrace)?;
-        
+
         let mut tags: Vec<legend_pure_parser_ast::ProfileTag> = Vec::new();
         let mut stereotypes: Vec<legend_pure_parser_ast::ProfileStereotype> = Vec::new();
 
@@ -485,14 +607,22 @@ impl<'a> Parser<'a> {
                     self.pos += 1;
                     self.expect_token(Token::Colon)?;
                     self.expect_token(Token::LBracket)?;
-                    while self.pos < self.tokens.len() && self.tokens[self.pos].token != Token::RBracket {
+                    while self.pos < self.tokens.len()
+                        && self.tokens[self.pos].token != Token::RBracket
+                    {
                         if let Token::Ident(val) = &self.tokens[self.pos].token {
                             let src_info = self.tokens[self.pos].source_info.clone();
-                            if is_tags { 
-                                tags.push(legend_pure_parser_ast::ProfileTag { value: val.to_string(), source_info: src_info.clone() }); 
+                            if is_tags {
+                                tags.push(legend_pure_parser_ast::ProfileTag {
+                                    value: val.to_string(),
+                                    source_info: src_info.clone(),
+                                });
                             }
-                            if is_stereo { 
-                                stereotypes.push(legend_pure_parser_ast::ProfileStereotype { value: val.to_string(), source_info: src_info }); 
+                            if is_stereo {
+                                stereotypes.push(legend_pure_parser_ast::ProfileStereotype {
+                                    value: val.to_string(),
+                                    source_info: src_info,
+                                });
                             }
                             self.pos += 1;
                         } else if self.tokens[self.pos].token == Token::Comma {
@@ -511,21 +641,30 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let end_info = if self.pos < self.tokens.len() { self.tokens[self.pos].source_info.clone() } else { self.tokens.last().unwrap().source_info.clone() };
+        let end_info = if self.pos < self.tokens.len() {
+            self.tokens[self.pos].source_info.clone()
+        } else {
+            self.tokens.last().unwrap().source_info.clone()
+        };
         self.expect_token(Token::RBrace)?;
 
         let source_info = SourceInfo {
             source_id: start_info.source_id.clone(),
-            start_line: start_info.start_line, end_line: end_info.end_line, 
-            start_column: start_info.start_column, end_column: end_info.end_column
+            start_line: start_info.start_line,
+            end_line: end_info.end_line,
+            start_column: start_info.start_column,
+            end_column: end_info.end_column,
         };
 
         Ok(ProfileDef {
-            package: PackagePath { path: pkg_path, source_info: source_info.clone() },
+            package: PackagePath {
+                path: pkg_path,
+                source_info: source_info.clone(),
+            },
             name,
             tags,
             stereotypes,
-            source_info
+            source_info,
         })
     }
 
@@ -548,7 +687,9 @@ impl<'a> Parser<'a> {
         let mut type_path = Vec::new();
         while self.pos < self.tokens.len() {
             if let Some(id) = self.tokens[self.pos].token.as_ident() {
-                if self.pos + 1 < self.tokens.len() && self.tokens[self.pos + 1].token == Token::PathSep {
+                if self.pos + 1 < self.tokens.len()
+                    && self.tokens[self.pos + 1].token == Token::PathSep
+                {
                     type_path.push(id.to_string());
                     self.pos += 2;
                 } else {

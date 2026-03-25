@@ -16,6 +16,13 @@ pub enum Element {
     Extension(ExtensionElement),
 }
 
+// todo all pkg elements definition should reuse traits to capture pkg, name
+// todo tag/stereotypes should be under an AnnotatedElement trait
+// todo all pkg elements should also have an import aware trait
+// todo define an import definition
+// todo PackagePath should be Package, each pointing to the parent package
+// todo each component should have source info, including name
+
 /// Represents a Pure Class definition
 pub struct ClassDef {
     pub package: PackagePath,
@@ -106,6 +113,7 @@ pub struct AssociationDef {
     pub package: PackagePath,
     pub name: SmolStr,
     pub source_info: SourceInfo,
+    // todo missing some details here?
 }
 
 pub struct MeasureDef {
@@ -116,6 +124,7 @@ pub struct MeasureDef {
 
 pub struct Variable {
     pub name: SmolStr,
+    // todo should be TypeAndMultiplicity together - if one is set, so is the other...
     pub variable_type: Option<Type>,
     pub multiplicity: Option<Multiplicity>,
     pub source_info: SourceInfo,
