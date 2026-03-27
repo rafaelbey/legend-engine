@@ -8,7 +8,7 @@ A Rust-based Pure grammar parser replacing the existing Java/ANTLR4 parser. The 
 ┌──────────────────────────────────────────────┐
 │  Layer 4: JNI Bridge (legend-pure-parser-jni)│  ← Java ↔ Rust FFI
 ├──────────────────────────────────────────────┤
-│  Layer 3: Emitter                            │  ← AST → Protocol JSON
+│  Layer 3: Protocol                           │  ← AST ↔ Protocol JSON
 ├──────────────────────────────────────────────┤
 │  Layer 2: Parser (recursive descent)         │  ← Tokens → AST
 ├──────────────────────────────────────────────┤
@@ -46,7 +46,7 @@ cargo llvm-cov --workspace --fail-under-lines 90
 | `legend-pure-parser-ast` | AST data model | `Element`, `Expression`, `TypeReference`, `SourceInfo` | `smol_str` |
 | `legend-pure-parser-lexer` | Tokenizer | `Token`, `TokenKind`, `Lexer` | ast, `smol_str`, `tracing` |
 | `legend-pure-parser-parser` | Recursive descent parser | `Parser`, `PluginRegistry`, `ParseResult` | ast, lexer, `tracing` |
-| `legend-pure-parser-emitter` | AST → Protocol v1 JSON | `emit_protocol_json()` | ast, `serde`, `serde_json` |
+| `legend-pure-parser-protocol` | AST ↔ Protocol v1 JSON | `to_protocol()`, protocol model | ast, `serde`, `serde_json` |
 | `legend-pure-parser-jni` | JNI bridge to Java | `Java_*` FFI functions | all crates, `jni`, `tracing-subscriber` |
 
 ## Development Guide
@@ -57,10 +57,11 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design details and [CONTRIBUTING.md](
 
 1. Add the type to `crates/ast/src/element.rs`
 2. Add a variant to the `Element` enum
-3. Implement `Spanned`, `Packageable`, `Annotated` traits
-4. Add parsing in `crates/parser/`
-5. Add emission in `crates/emitter/`
-6. Add tests
+3. Derive traits: `#[derive(crate::PackageableElement)]` (brings `Spanned` + `Annotated` + `PackageableElement`)
+4. Add manual `Spanned`, `Annotated`, `PackageableElement` dispatch to the `Element` enum impls
+5. Add parsing in `crates/parser/`
+6. Add protocol conversion in `crates/protocol/`
+7. Add tests
 
 ### Adding a New Plugin
 
