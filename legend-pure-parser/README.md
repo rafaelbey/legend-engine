@@ -6,6 +6,8 @@ A Rust-based Pure grammar parser replacing the existing Java/ANTLR4 parser. The 
 
 ```
 ┌──────────────────────────────────────────────┐
+│  Layer 5: Pure (Semantic Layer)              │  ← AST → Resolved Graph
+├──────────────────────────────────────────────┤
 │  Layer 4: JNI Bridge (legend-pure-parser-jni)│  ← Java ↔ Rust FFI
 ├──────────────────────────────────────────────┤
 │  Layer 3: Protocol                           │  ← AST ↔ Protocol JSON
@@ -39,6 +41,27 @@ cargo llvm-cov --workspace --html --output-dir coverage/
 cargo llvm-cov --workspace --fail-under-lines 90
 ```
 
+## Legend CLI
+
+The `legend` CLI is the primary developer tool — install and use it directly:
+
+```bash
+# Install
+cargo install --path crates/cli
+
+# Parse a Pure file to Protocol JSON
+legend parse model.pure
+
+# Check all Pure files for syntax errors
+legend check src/main/pure/
+
+# Initialize a new project
+legend init my-model
+
+# See all commands
+legend --help
+```
+
 ## Crate Map
 
 | Crate | Purpose | Key Types | Dependencies |
@@ -47,7 +70,9 @@ cargo llvm-cov --workspace --fail-under-lines 90
 | `legend-pure-parser-lexer` | Tokenizer | `Token`, `TokenKind`, `Lexer` | ast, `smol_str`, `tracing` |
 | `legend-pure-parser-parser` | Recursive descent parser | `Parser`, `PluginRegistry`, `ParseResult` | ast, lexer, `tracing` |
 | `legend-pure-parser-protocol` | AST ↔ Protocol v1 JSON | `to_protocol()`, protocol model | ast, `serde`, `serde_json` |
+| `legend-pure-parser-pure` | Semantic Layer | `PureModel`, `ElementId`, `Class`, `TypeExpr` | ast, parser, `serde`, `bincode` |
 | `legend-pure-parser-jni` | JNI bridge to Java | `Java_*` FFI functions | all crates, `jni`, `tracing-subscriber` |
+| `legend-cli` | Developer CLI | `legend` binary | ast, parser, protocol, `clap`, `miette` |
 
 ## Development Guide
 
