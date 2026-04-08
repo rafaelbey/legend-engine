@@ -6,17 +6,19 @@ A Rust-based Pure grammar parser replacing the existing Java/ANTLR4 parser. The 
 
 ```
 ┌──────────────────────────────────────────────┐
-│  Layer 5: Pure (Semantic Layer)              │  ← AST → Resolved Graph
+│  Layer 7: CLI / JNI (developer tools + FFI)  │
 ├──────────────────────────────────────────────┤
-│  Layer 4: JNI Bridge (legend-pure-parser-jni)│  ← Java ↔ Rust FFI
+│  Layer 6: Runtime (interpreter + heap)        │  ← Value, RuntimeHeap, Executor
 ├──────────────────────────────────────────────┤
-│  Layer 3: Protocol                           │  ← AST ↔ Protocol JSON
+│  Layer 5: Pure (Semantic Layer)                │  ← AST → Resolved Graph
 ├──────────────────────────────────────────────┤
-│  Layer 2: Parser (recursive descent)         │  ← Tokens → AST
+│  Layer 3: Protocol                             │  ← AST ↔ Protocol JSON
 ├──────────────────────────────────────────────┤
-│  Layer 1: Lexer (tokenizer)                  │  ← Source → Tokens
+│  Layer 2: Parser + Compose                     │  ← Tokens → AST → Text
 ├──────────────────────────────────────────────┤
-│  Layer 0: AST (data model)                   │  ← Shared types
+│  Layer 1: Lexer (tokenizer)                    │  ← Source → Tokens
+├──────────────────────────────────────────────┤
+│  Layer 0: AST (data model)                     │  ← Shared types
 └──────────────────────────────────────────────┘
 ```
 
@@ -29,8 +31,11 @@ cargo build --workspace
 # Test
 cargo test --workspace
 
-# Lint
-cargo clippy --workspace -- -D warnings
+# Lint (strict: no unwrap/expect in library code)
+cargo lint-lib
+
+# Lint (standard clippy, all targets)
+cargo lint
 cargo fmt --check
 
 # Copyright check (all .rs and .toml files must have headers)
@@ -69,10 +74,12 @@ legend --help
 | `legend-pure-parser-ast` | AST data model | `Element`, `Expression`, `TypeReference`, `SourceInfo` | `smol_str` |
 | `legend-pure-parser-lexer` | Tokenizer | `Token`, `TokenKind`, `Lexer` | ast, `smol_str`, `tracing` |
 | `legend-pure-parser-parser` | Recursive descent parser | `Parser`, `PluginRegistry`, `ParseResult` | ast, lexer, `tracing` |
-| `legend-pure-parser-protocol` | AST ↔ Protocol v1 JSON | `to_protocol()`, protocol model | ast, `serde`, `serde_json` |
+| `legend-pure-parser-protocol` | AST ↔ Protocol v1 JSON | `convert_source_file()`, protocol model | ast, parser, `serde`, `serde_json` |
+| `legend-pure-parser-compose` | AST → Pure grammar text | `compose()`, roundtrip support | ast, protocol, parser |
 | `legend-pure-parser-pure` | Semantic Layer | `PureModel`, `ElementId`, `Class`, `TypeExpr` | ast, parser, `serde`, `bincode` |
-| `legend-pure-parser-jni` | JNI bridge to Java | `Java_*` FFI functions | all crates, `jni`, `tracing-subscriber` |
-| `legend-cli` | Developer CLI | `legend` binary | ast, parser, protocol, `clap`, `miette` |
+| `legend-pure-runtime` | Interpreter + heap | `Value`, `RuntimeHeap`, `VariableContext` | pure, ast, `im-rc`, `slotmap`, `rust_decimal`, `jiff` |
+| `legend-pure-parser-jni` | JNI bridge to Java | `Java_*` FFI functions | ast, lexer, parser, protocol, `jni` |
+| `legend-cli` | Developer CLI | `legend` binary | ast, lexer, parser, protocol, compose, pure, `clap` |
 
 ## Development Guide
 
