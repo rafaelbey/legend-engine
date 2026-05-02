@@ -150,7 +150,7 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
 /// Sum of the categories above as observed against the current repo composition
 /// (`core_functions_*` engine-side + `platform_store_relational` upstream).
 /// Bump when a new dispatch issue is added; reduce when a known fix lands.
-const KNOWN_ERROR_COUNT: usize = 759;
+const KNOWN_ERROR_COUNT: usize = 745;
 
 fn compose_repos() -> Vec<Repo> {
     let mut repos: Vec<Repo> = Repo::default_embedded();
