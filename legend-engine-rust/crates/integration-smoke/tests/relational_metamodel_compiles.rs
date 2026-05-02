@@ -34,50 +34,121 @@ use smol_str::SmolStr;
 
 /// Currently-known compile failures against the engine-side repos this
 /// workspace embeds. Each entry is `(canonical_url_prefix, fragment_of_message)`.
-/// Every entry is a real parser/compiler gap in `legend-pure-rust` (Java
-/// compiles all of these cleanly). They are filed upstream and unlocked
-/// as those fixes land. Categories:
+/// Every entry is a real parser/compiler/runtime gap in `legend-pure-rust`
+/// (Java compiles all of these cleanly). They are filed upstream and
+/// unlocked as those fixes land.
 ///
-/// 1. `core_functions_relation` / `core_functions_standard` — TDS island
-///    grammar, Unicode lexer chars (⊆, ?, "), generic-type covariance
-///    modifier (`+T`), annotation/list start tokens, overload narrowing
-///    for `toString`/`plus`, and cascading "Cannot resolve function"
-///    failures downstream of the parser errors.
-/// 2. `platform_store_relational` — compiler-side overload narrowing for
-///    `elementToPath` (3 candidates).
+/// Snapshot 2026-05-02: TDS island parser is now wired through
+/// `repo::load`. The historical "Expected island grammar for tag 'TDS'"
+/// errors (~190 in core_functions_relation, ~50 in core_functions_standard)
+/// are gone. Wiring the parser uncovered three new layers:
 ///
-/// **Note:** the original 7-error catalog for `core_functions_unclassified`
-/// (keyword-reservation, qualified-name-in-expression, type-with-multiplicity
-/// in match patterns) is no longer needed — the parser fixes landed upstream
-/// in `legend-pure-rust` and those errors are now compile-clean.
+/// 1. **Compiler island lowering** (~266 errors): `Expression::Island(_)`
+///    is parsed but `legend_pure_parser_pure` has no lowering rule for it.
+///    Surfaces as `Island expression lowering not yet implemented` and
+///    cascading `Cannot resolve function 'over'/'extend'/'join'/...`.
+/// 2. **TDS body parser gaps** (~100 errors): the `dsl-tds` parser
+///    tokeniser doesn't accept `-` (negative numbers) or decimal literals
+///    in cell positions, and column-builder syntax `~name : init : agg`
+///    (multi-`:`) used by `groupBy`/`aggregate` post-TDS expressions
+///    fails on the second `:`.
+/// 3. **Pre-existing parser/lexer gaps** (still here): Unicode `⊆`/`?`/`\"`
+///    in lambda type signatures, generic-type covariance modifier `<+T>`,
+///    overload narrowing for `toString`/`plus`/`elementToPath`, type
+///    inference for unannotated lambda params, plus one visibility
+///    miss for `distinct`.
 const KNOWN_ERRORS: &[(&str, &str)] = &[
-    // --- core_functions_relation parser gaps ---
-    // TDS island-grammar bodies inside #TDS\n...# fixtures.
+    // --- Compiler-side: islands not yet lowered (post-wiring-fix) ---
     (
         "/core_functions_relation/",
-        "Expected island grammar for tag 'TDS'",
+        "Island expression lowering not yet implemented",
     ),
-    // Lexer rejects Unicode subset symbol used in type signatures.
+    (
+        "/core_functions_standard/",
+        "Island expression lowering not yet implemented",
+    ),
+    // --- TDS parser gaps ---
+    // dsl-tds rejects '-' in cell rows (negative-number cell values).
+    (
+        "/core_functions_relation/",
+        "Expected TDS cell value (literal or identifier), found '-'",
+    ),
+    (
+        "/core_functions_standard/",
+        "Expected TDS cell value (literal or identifier), found '-'",
+    ),
+    // dsl-tds rejects decimal literals in cell rows.
+    (
+        "/core_functions_relation/",
+        "Expected TDS cell value (literal or identifier), found decimal literal",
+    ),
+    (
+        "/core_functions_standard/",
+        "Expected TDS cell value (literal or identifier), found decimal literal",
+    ),
+    // --- Column-builder multi-colon syntax (groupBy/aggregate) ---
+    // `~name : x | init : y | agg` — second `:` reaches parse_expression
+    // primary which doesn't accept `:`.
+    (
+        "/core_functions_relation/",
+        "Expected expression, found ':'",
+    ),
+    (
+        "/core_functions_standard/",
+        "Expected expression, found ':'",
+    ),
+    // --- Cascading function-resolution failures (downstream of islands) ---
+    (
+        "/core_functions_relation/",
+        "Cannot resolve function",
+    ),
+    (
+        "/core_functions_standard/",
+        "Cannot resolve function",
+    ),
+    // --- Lambda type inference gap (uncovered post-wiring) ---
+    (
+        "/core_functions_relation/",
+        "Cannot infer type",
+    ),
+    (
+        "/core_functions_standard/",
+        "Cannot infer type",
+    ),
+    // --- Visibility miss in core_functions_standard (one-off) ---
+    (
+        "/core_functions_standard/",
+        "is not visible in the file",
+    ),
+    // --- Pre-existing parser/lexer gaps (predate TDS wiring) ---
+    // Unicode subset/optional/quote chars in lambda type signatures.
     (
         "/core_functions_relation/",
         "Unexpected character '⊆'",
     ),
-    // Lexer rejects '?' (used in optional/multiplicity notation).
     (
         "/core_functions_relation/",
         "Unexpected character '?'",
     ),
-    // Lexer rejects '\"' (smart-quote / non-ASCII quote variants).
     (
         "/core_functions_relation/",
         "Unexpected character '\"'",
     ),
-    // Generic-type covariance modifier: parser expects '>' before '+'.
+    (
+        "/core_functions_standard/",
+        "Unexpected character '?'",
+    ),
+    // Generic-type covariance modifier `<+T>` not yet supported.
     (
         "/core_functions_relation/",
         "Expected '>', found '+'",
     ),
-    // Compiler overload narrowing not yet handling toString/plus calls.
+    // Annotation/list start-token confusion.
+    (
+        "/core_functions_standard/",
+        "Expected '{', found '['",
+    ),
+    // Compiler overload narrowing.
     (
         "/core_functions_relation/",
         "Ambiguous function call 'toString'",
@@ -86,28 +157,11 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
         "/core_functions_relation/",
         "Ambiguous function call 'plus'",
     ),
-    // --- core_functions_standard parser + cascading-resolution gaps ---
     (
         "/core_functions_standard/",
-        "Expected island grammar for tag 'TDS'",
+        "Ambiguous function call 'toString'",
     ),
-    (
-        "/core_functions_standard/",
-        "Expected '{', found '['",
-    ),
-    (
-        "/core_functions_standard/",
-        "Unexpected character '?'",
-    ),
-    // Cascading: parser failed to register these functions, so call
-    // sites cannot resolve them. Will clear when parser gaps lift.
-    (
-        "/core_functions_standard/",
-        "Cannot resolve function",
-    ),
-    // --- platform_store_relational compiler dispatch gaps ---
-    // `relationalRuntime.pure` calls `elementToPath` and the compiler
-    // can't narrow between 3 overloads. Upstream-side compiler issue.
+    // --- platform_store_relational compiler dispatch ---
     (
         "/platform_store_relational/",
         "Ambiguous function call 'elementToPath'",
@@ -119,7 +173,7 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
 /// Sum of the categories above as observed against the current repo composition
 /// (`core_functions_*` engine-side + `platform_store_relational` upstream).
 /// Bump when a new dispatch issue is added; reduce when a known fix lands.
-const KNOWN_ERROR_COUNT: usize = 237;
+const KNOWN_ERROR_COUNT: usize = 584;
 
 fn compose_repos() -> Vec<Repo> {
     let mut repos: Vec<Repo> = Repo::default_embedded();
