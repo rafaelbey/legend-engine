@@ -38,25 +38,21 @@ use smol_str::SmolStr;
 /// (Java compiles all of these cleanly). They are filed upstream and
 /// unlocked as those fixes land.
 ///
-/// Snapshot 2026-05-02: TDS island parser is now wired through
-/// `repo::load`. The historical "Expected island grammar for tag 'TDS'"
-/// errors (~190 in core_functions_relation, ~50 in core_functions_standard)
-/// are gone. Wiring the parser uncovered three new layers:
+/// Snapshot 2026-05-02 (after Fix 1): TDS island parser is wired and
+/// the cell-value parser now handles multi-token cells (negatives,
+/// decimals, unquoted datetimes). Two layers of pre-existing work
+/// remain visible:
 ///
-/// 1. **Compiler island lowering** (~266 errors): `Expression::Island(_)`
-///    is parsed but `legend_pure_parser_pure` has no lowering rule for it.
-///    Surfaces as `Island expression lowering not yet implemented` and
-///    cascading `Cannot resolve function 'over'/'extend'/'join'/...`.
-/// 2. **TDS body parser gaps** (~100 errors): the `dsl-tds` parser
-///    tokeniser doesn't accept `-` (negative numbers) or decimal literals
-///    in cell positions, and column-builder syntax `~name : init : agg`
-///    (multi-`:`) used by `groupBy`/`aggregate` post-TDS expressions
-///    fails on the second `:`.
-/// 3. **Pre-existing parser/lexer gaps** (still here): Unicode `⊆`/`?`/`\"`
-///    in lambda type signatures, generic-type covariance modifier `<+T>`,
-///    overload narrowing for `toString`/`plus`/`elementToPath`, type
-///    inference for unannotated lambda params, plus one visibility
-///    miss for `distinct`.
+/// 1. **Compiler island lowering** (dominant share): `Expression::Island(_)`
+///    is parsed but `legend_pure_parser_pure` has no lowering rule for
+///    it. Surfaces as `Island expression lowering not yet implemented`
+///    plus cascading `Cannot resolve function 'over'/'extend'/'join'/...`.
+/// 2. **Pre-existing parser/lexer gaps**: column-builder multi-`:`
+///    syntax in `groupBy`/`aggregate`, Unicode `⊆`/`?`/`\"` in lambda
+///    type signatures, generic-type covariance modifier `<+T>`, overload
+///    narrowing for `toString`/`plus`/`elementToPath`, lambda type
+///    inference for unannotated params, plus one visibility miss for
+///    `distinct`.
 const KNOWN_ERRORS: &[(&str, &str)] = &[
     // --- Compiler-side: islands not yet lowered (post-wiring-fix) ---
     (
@@ -66,25 +62,6 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
     (
         "/core_functions_standard/",
         "Island expression lowering not yet implemented",
-    ),
-    // --- TDS parser gaps ---
-    // dsl-tds rejects '-' in cell rows (negative-number cell values).
-    (
-        "/core_functions_relation/",
-        "Expected TDS cell value (literal or identifier), found '-'",
-    ),
-    (
-        "/core_functions_standard/",
-        "Expected TDS cell value (literal or identifier), found '-'",
-    ),
-    // dsl-tds rejects decimal literals in cell rows.
-    (
-        "/core_functions_relation/",
-        "Expected TDS cell value (literal or identifier), found decimal literal",
-    ),
-    (
-        "/core_functions_standard/",
-        "Expected TDS cell value (literal or identifier), found decimal literal",
     ),
     // --- Column-builder multi-colon syntax (groupBy/aggregate) ---
     // `~name : x | init : y | agg` — second `:` reaches parse_expression
@@ -173,7 +150,7 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
 /// Sum of the categories above as observed against the current repo composition
 /// (`core_functions_*` engine-side + `platform_store_relational` upstream).
 /// Bump when a new dispatch issue is added; reduce when a known fix lands.
-const KNOWN_ERROR_COUNT: usize = 584;
+const KNOWN_ERROR_COUNT: usize = 759;
 
 fn compose_repos() -> Vec<Repo> {
     let mut repos: Vec<Repo> = Repo::default_embedded();
