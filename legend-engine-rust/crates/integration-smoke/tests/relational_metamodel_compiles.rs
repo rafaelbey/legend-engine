@@ -115,11 +115,6 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
         "/core_functions_standard/",
         "Unexpected character '?'",
     ),
-    // Generic-type covariance modifier `<+T>` not yet supported.
-    (
-        "/core_functions_relation/",
-        "Expected '>', found '+'",
-    ),
     // Annotation/list start-token confusion.
     (
         "/core_functions_standard/",
@@ -150,7 +145,7 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
 /// Sum of the categories above as observed against the current repo composition
 /// (`core_functions_*` engine-side + `platform_store_relational` upstream).
 /// Bump when a new dispatch issue is added; reduce when a known fix lands.
-const KNOWN_ERROR_COUNT: usize = 745;
+const KNOWN_ERROR_COUNT: usize = 699;
 
 fn compose_repos() -> Vec<Repo> {
     let mut repos: Vec<Repo> = Repo::default_embedded();
