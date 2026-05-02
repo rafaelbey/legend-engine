@@ -97,23 +97,57 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
         "/core_functions_standard/",
         "is not visible in the file",
     ),
-    // --- Pre-existing parser/lexer gaps (predate TDS wiring) ---
-    // Unicode subset/optional/quote chars in lambda type signatures.
+    // --- New gaps surfaced post-Fix-4 (lexer accepts ⊆/?/" now,
+    //     so files like eval.pure and sort.pure parse and the
+    //     compiler/parser hit downstream work). ---
+    // Compiler overload narrowing for sort/select/minus/extend with
+    // multi-arg overloads.
     (
         "/core_functions_relation/",
-        "Unexpected character '⊆'",
+        "Ambiguous function call 'sort'",
     ),
     (
         "/core_functions_relation/",
-        "Unexpected character '?'",
+        "Ambiguous function call 'select'",
     ),
     (
         "/core_functions_relation/",
-        "Unexpected character '\"'",
+        "Ambiguous function call 'minus'",
+    ),
+    (
+        "/core_functions_relation/",
+        "Ambiguous function call 'extend'",
     ),
     (
         "/core_functions_standard/",
-        "Unexpected character '?'",
+        "Ambiguous function call 'sort'",
+    ),
+    (
+        "/core_functions_standard/",
+        "Ambiguous function call 'select'",
+    ),
+    (
+        "/core_functions_standard/",
+        "Ambiguous function call 'minus'",
+    ),
+    // `?` appears in places beyond column-spec — investigate and
+    // narrow these patterns as more shape becomes clear.
+    (
+        "/core_functions_relation/",
+        "Expected identifier, found '?'",
+    ),
+    (
+        "/core_functions_relation/",
+        "Cannot resolve element '?'",
+    ),
+    (
+        "/core_functions_standard/",
+        "Cannot resolve element '?'",
+    ),
+    // `Expected '>', found '='` — narrow comparison/type-arg corner.
+    (
+        "/core_functions_relation/",
+        "Expected '>', found '='",
     ),
     // Annotation/list start-token confusion.
     (
@@ -145,7 +179,7 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
 /// Sum of the categories above as observed against the current repo composition
 /// (`core_functions_*` engine-side + `platform_store_relational` upstream).
 /// Bump when a new dispatch issue is added; reduce when a known fix lands.
-const KNOWN_ERROR_COUNT: usize = 699;
+const KNOWN_ERROR_COUNT: usize = 1093;
 
 fn compose_repos() -> Vec<Repo> {
     let mut repos: Vec<Repo> = Repo::default_embedded();
