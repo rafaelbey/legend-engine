@@ -122,6 +122,13 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
         "/core_functions_relation/",
         "Ambiguous function call 'groupBy'",
     ),
+    // Surfaced after the property-access-on-Relation-row fix typed
+    // `$x.payload` as the column's actual type instead of `Any`.
+    // The `get(Variant, Integer)` overload set isn't yet narrowed.
+    (
+        "/core_functions_relation/",
+        "Ambiguous function call 'get'",
+    ),
     (
         "/core_functions_standard/",
         "Ambiguous function call 'sort'",
@@ -187,7 +194,7 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
 /// Sum of the categories above as observed against the current repo composition
 /// (`core_functions_*` engine-side + `platform_store_relational` upstream).
 /// Bump when a new dispatch issue is added; reduce when a known fix lands.
-const KNOWN_ERROR_COUNT: usize = 0;
+const KNOWN_ERROR_COUNT: usize = 5;
 
 fn compose_repos() -> Vec<Repo> {
     // Phase 3b shape-system: the binary only embeds `platform`; the
