@@ -130,6 +130,10 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
         "/core_functions_standard/",
         "Ambiguous function call 'minus'",
     ),
+    (
+        "/core_functions_standard/",
+        "Ambiguous function call 'extend'",
+    ),
     // `?` appears in places beyond column-spec — investigate and
     // narrow these patterns as more shape becomes clear.
     (
@@ -179,10 +183,15 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
 /// Sum of the categories above as observed against the current repo composition
 /// (`core_functions_*` engine-side + `platform_store_relational` upstream).
 /// Bump when a new dispatch issue is added; reduce when a known fix lands.
-const KNOWN_ERROR_COUNT: usize = 1093;
+const KNOWN_ERROR_COUNT: usize = 608;
 
 fn compose_repos() -> Vec<Repo> {
-    let mut repos: Vec<Repo> = Repo::default_embedded();
+    // Phase 3b shape-system: the binary only embeds `platform`; the
+    // rest of the platform repos (DSLs, store-relational, etc.) ship
+    // as `.purem` artifacts next to the test binary.
+    // `default_with_build_snapshots()` picks those up automatically
+    // during `cargo run` / `cargo test`.
+    let mut repos: Vec<Repo> = Repo::default_with_build_snapshots();
     repos.extend(legend_engine_rust_core_functions_json_pure::repos());
     repos.extend(legend_engine_rust_core_functions_unclassified_pure::repos());
     repos.extend(legend_engine_rust_core_functions_variant_pure::repos());
