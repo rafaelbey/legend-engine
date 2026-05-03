@@ -187,7 +187,7 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
 /// Sum of the categories above as observed against the current repo composition
 /// (`core_functions_*` engine-side + `platform_store_relational` upstream).
 /// Bump when a new dispatch issue is added; reduce when a known fix lands.
-const KNOWN_ERROR_COUNT: usize = 31;
+const KNOWN_ERROR_COUNT: usize = 11;
 
 fn compose_repos() -> Vec<Repo> {
     // Phase 3b shape-system: the binary only embeds `platform`; the
