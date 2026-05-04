@@ -29,3 +29,6 @@ legend-engine-rust-core-functions-standard-pure        = { path = "../core-funct
 legend-engine-rust-core-functions-unclassified-pure    = { path = "../core-functions-unclassified-pure" }
 legend-engine-rust-core-functions-variant-pure         = { path = "../core-functions-variant-pure" }
 smol_str                                               = { workspace = true }
+
+[dev-dependencies]
+legend-pure-runtime = { workspace = true }

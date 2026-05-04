@@ -35,6 +35,7 @@ repository = "https://github.com/finos/legend-engine"
 legend-pure-core-platform = { path = "../../legend-pure/legend-pure-rust/crates/core-platform-pure" }
 legend-pure-build         = { path = "../../legend-pure/legend-pure-rust/crates/build" }
 legend-pure-parser-pure   = { path = "../../legend-pure/legend-pure-rust/crates/pure" }
+legend-pure-runtime       = { path = "../../legend-pure/legend-pure-rust/crates/runtime" }
 
 # Standard
 smol_str = "0.3"
