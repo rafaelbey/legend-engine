@@ -38,154 +38,27 @@ use smol_str::SmolStr;
 /// (Java compiles all of these cleanly). They are filed upstream and
 /// unlocked as those fixes land.
 ///
-/// Snapshot 2026-05-02 (after Fix 1): TDS island parser is wired and
-/// the cell-value parser now handles multi-token cells (negatives,
-/// decimals, unquoted datetimes). Two layers of pre-existing work
-/// remain visible:
+/// Snapshot 2026-05-03 (after the Generic-→-`None` inferer fix): the
+/// cheap `infer_type_from_valuespec` no longer widens unbound generic
+/// returns to `Any`. That distinction lets the narrower's
+/// "unknown-arg permits all" branch run for those calls instead of the
+/// "Any rejects every non-Any param → empty filter → fallback" path
+/// that was producing the residual `Ambiguous extend / sort / minus /
+/// toString / plus` cascade.
 ///
-/// 1. **Compiler island lowering** (dominant share): `Expression::Island(_)`
-///    is parsed but `legend_pure_parser_pure` has no lowering rule for
-///    it. Surfaces as `Island expression lowering not yet implemented`
-///    plus cascading `Cannot resolve function 'over'/'extend'/'join'/...`.
-/// 2. **Pre-existing parser/lexer gaps**: column-builder multi-`:`
-///    syntax in `groupBy`/`aggregate`, Unicode `⊆`/`?`/`\"` in lambda
-///    type signatures, generic-type covariance modifier `<+T>`, overload
-///    narrowing for `toString`/`plus`/`elementToPath`, lambda type
-///    inference for unannotated params, plus one visibility miss for
-///    `distinct`.
+/// Only one residual error remains:
+///
+/// 1. **TDS qualified-class column type** (one-off, `filter.pure:77`):
+///    `~payload:meta::pure::metamodel::variant::Variant` is parsed by
+///    the TDS DSL but `classify_type_name` only recognises the seven
+///    primitive types. The fallback infers `String` from the quoted
+///    cell values, which mistypes `$row.payload->get(0)` and leaves
+///    `get(Variant, Integer)` ambiguous.
 const KNOWN_ERRORS: &[(&str, &str)] = &[
-    // --- Compiler-side: islands not yet lowered (post-wiring-fix) ---
-    (
-        "/core_functions_relation/",
-        "Island expression lowering not yet implemented",
-    ),
-    (
-        "/core_functions_standard/",
-        "Island expression lowering not yet implemented",
-    ),
-    // --- Column-builder multi-colon syntax (groupBy/aggregate) ---
-    // `~name : x | init : y | agg` — second `:` reaches parse_expression
-    // primary which doesn't accept `:`.
-    (
-        "/core_functions_relation/",
-        "Expected expression, found ':'",
-    ),
-    (
-        "/core_functions_standard/",
-        "Expected expression, found ':'",
-    ),
-    // --- Cascading function-resolution failures (downstream of islands) ---
-    (
-        "/core_functions_relation/",
-        "Cannot resolve function",
-    ),
-    (
-        "/core_functions_standard/",
-        "Cannot resolve function",
-    ),
-    // --- Lambda type inference gap (uncovered post-wiring) ---
-    (
-        "/core_functions_relation/",
-        "Cannot infer type",
-    ),
-    (
-        "/core_functions_standard/",
-        "Cannot infer type",
-    ),
-    // --- Visibility miss in core_functions_standard (one-off) ---
-    (
-        "/core_functions_standard/",
-        "is not visible in the file",
-    ),
-    // --- New gaps surfaced post-Fix-4 (lexer accepts ⊆/?/" now,
-    //     so files like eval.pure and sort.pure parse and the
-    //     compiler/parser hit downstream work). ---
-    // Compiler overload narrowing for sort/select/minus/extend with
-    // multi-arg overloads.
-    (
-        "/core_functions_relation/",
-        "Ambiguous function call 'sort'",
-    ),
-    (
-        "/core_functions_relation/",
-        "Ambiguous function call 'select'",
-    ),
-    (
-        "/core_functions_relation/",
-        "Ambiguous function call 'minus'",
-    ),
-    (
-        "/core_functions_relation/",
-        "Ambiguous function call 'extend'",
-    ),
-    (
-        "/core_functions_relation/",
-        "Ambiguous function call 'groupBy'",
-    ),
-    // Surfaced after the property-access-on-Relation-row fix typed
-    // `$x.payload` as the column's actual type instead of `Any`.
-    // The `get(Variant, Integer)` overload set isn't yet narrowed.
+    // TDS qualified-class column type not propagated through the DSL.
     (
         "/core_functions_relation/",
         "Ambiguous function call 'get'",
-    ),
-    (
-        "/core_functions_standard/",
-        "Ambiguous function call 'sort'",
-    ),
-    (
-        "/core_functions_standard/",
-        "Ambiguous function call 'select'",
-    ),
-    (
-        "/core_functions_standard/",
-        "Ambiguous function call 'minus'",
-    ),
-    (
-        "/core_functions_standard/",
-        "Ambiguous function call 'extend'",
-    ),
-    // `?` appears in places beyond column-spec — investigate and
-    // narrow these patterns as more shape becomes clear.
-    (
-        "/core_functions_relation/",
-        "Expected identifier, found '?'",
-    ),
-    (
-        "/core_functions_relation/",
-        "Cannot resolve element '?'",
-    ),
-    (
-        "/core_functions_standard/",
-        "Cannot resolve element '?'",
-    ),
-    // `Expected '>', found '='` — narrow comparison/type-arg corner.
-    (
-        "/core_functions_relation/",
-        "Expected '>', found '='",
-    ),
-    // Annotation/list start-token confusion.
-    (
-        "/core_functions_standard/",
-        "Expected '{', found '['",
-    ),
-    // Compiler overload narrowing.
-    (
-        "/core_functions_relation/",
-        "Ambiguous function call 'toString'",
-    ),
-    (
-        "/core_functions_relation/",
-        "Ambiguous function call 'plus'",
-    ),
-    (
-        "/core_functions_standard/",
-        "Ambiguous function call 'toString'",
-    ),
-    // --- platform_store_relational compiler dispatch ---
-    (
-        "/platform_store_relational/",
-        "Ambiguous function call 'elementToPath'",
     ),
 ];
 
@@ -194,7 +67,7 @@ const KNOWN_ERRORS: &[(&str, &str)] = &[
 /// Sum of the categories above as observed against the current repo composition
 /// (`core_functions_*` engine-side + `platform_store_relational` upstream).
 /// Bump when a new dispatch issue is added; reduce when a known fix lands.
-const KNOWN_ERROR_COUNT: usize = 5;
+const KNOWN_ERROR_COUNT: usize = 1;
 
 fn compose_repos() -> Vec<Repo> {
     // Phase 3b shape-system: the binary only embeds `platform`; the
