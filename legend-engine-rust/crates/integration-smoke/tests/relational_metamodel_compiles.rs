@@ -34,40 +34,21 @@ use smol_str::SmolStr;
 
 /// Currently-known compile failures against the engine-side repos this
 /// workspace embeds. Each entry is `(canonical_url_prefix, fragment_of_message)`.
-/// Every entry is a real parser/compiler/runtime gap in `legend-pure-rust`
-/// (Java compiles all of these cleanly). They are filed upstream and
-/// unlocked as those fixes land.
 ///
-/// Snapshot 2026-05-03 (after the Generic-→-`None` inferer fix): the
-/// cheap `infer_type_from_valuespec` no longer widens unbound generic
-/// returns to `Any`. That distinction lets the narrower's
-/// "unknown-arg permits all" branch run for those calls instead of the
-/// "Any rejects every non-Any param → empty filter → fallback" path
-/// that was producing the residual `Ambiguous extend / sort / minus /
-/// toString / plus` cascade.
-///
-/// Only one residual error remains:
-///
-/// 1. **TDS qualified-class column type** (one-off, `filter.pure:77`):
-///    `~payload:meta::pure::metamodel::variant::Variant` is parsed by
-///    the TDS DSL but `classify_type_name` only recognises the seven
-///    primitive types. The fallback infers `String` from the quoted
-///    cell values, which mistypes `$row.payload->get(0)` and leaves
-///    `get(Variant, Integer)` ambiguous.
-const KNOWN_ERRORS: &[(&str, &str)] = &[
-    // TDS qualified-class column type not propagated through the DSL.
-    (
-        "/core_functions_relation/",
-        "Ambiguous function call 'get'",
-    ),
-];
+/// Empty: the engine-side `core_functions_*` set composes with
+/// `platform_*` and compiles clean. The strict
+/// `engine_repos_compile_clean` test carries the load — this regression
+/// catalog stays in place to flag any new failures that surface as
+/// upstream work lands.
+const KNOWN_ERRORS: &[(&str, &str)] = &[];
 
 /// Number of compile errors the regression-detection lock expects.
 ///
-/// Sum of the categories above as observed against the current repo composition
-/// (`core_functions_*` engine-side + `platform_store_relational` upstream).
-/// Bump when a new dispatch issue is added; reduce when a known fix lands.
-const KNOWN_ERROR_COUNT: usize = 1;
+/// `0` means the strict `engine_repos_compile_clean` test runs and the
+/// regression-detection variant is a no-op. Bump (and add a
+/// corresponding `KNOWN_ERRORS` entry) only if a new dispatch issue
+/// surfaces and there's a concrete plan to fix it upstream.
+const KNOWN_ERROR_COUNT: usize = 0;
 
 fn compose_repos() -> Vec<Repo> {
     // Phase 3b shape-system: the binary only embeds `platform`; the
