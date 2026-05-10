@@ -21,6 +21,7 @@ members = [
     "crates/core-functions-unclassified-pure",
     "crates/core-functions-variant-pure",
     "crates/integration-smoke",
+    "crates/natives-functions-unclassified",
 ]
 
 [workspace.package]
