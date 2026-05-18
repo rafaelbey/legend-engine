@@ -83,6 +83,7 @@ fn compose_repos_with_user_source(name: &str, source: &str) -> Vec<Repo> {
             content: source.into(),
         }],
         meta: Some(meta),
+        source_root: None,
     });
     repos
 }

@@ -88,6 +88,7 @@ fn compose_repos_with_user_source(name: &str, source: &str) -> Vec<Repo> {
             content: source.into(),
         }],
         meta: Some(meta),
+        source_root: None,
     });
     repos
 }
@@ -192,6 +193,18 @@ fn walk(vs: &ValueSpec, out: &mut Vec<Vec<Parameter>>) {
         ExprKind::Collection { elements } => {
             for e in elements {
                 walk(e, out);
+            }
+        }
+        ExprKind::ColSpecLiteral { column, .. } => {
+            if let Some(init) = column.init_lambda.as_ref() {
+                walk(init, out);
+            }
+        }
+        ExprKind::ColSpecArrayLiteral { columns, .. } => {
+            for c in columns {
+                if let Some(init) = c.init_lambda.as_ref() {
+                    walk(init, out);
+                }
             }
         }
         _ => {}
@@ -312,30 +325,22 @@ fn walk_col(
 }
 
 #[test]
-fn extend_func_col_spec_currently_drops_its_lambda() {
-    // Locks the current shape: `extend(~name:c|$c.val->...)` lowers to
-    // a `ColSpecLiteral` carrying `kind=Func` and the column metadata,
-    // but the inner `c|$c.val->…` lambda is dropped at column lowering
-    // time. See `lower_column` in `crates/pure/src/lower.rs` (TODO
-    // comment around the `Lambda-bearing ~name:x|$x+1` doc note).
+fn extend_func_col_spec_preserves_its_init_lambda() {
+    // `extend(~name:c|$c.val->...)` lowers to a `ColSpecLiteral`
+    // carrying `kind=Func`. The init lambda `c|$c.val->…` is stashed
+    // in `RelationColumnLowered.init_lambda` so the runtime
+    // `FuncColSpec` allocator can hand a closure to the `extend`
+    // native — which evaluates the lambda per row to materialise the
+    // new column's cells.
     //
-    // **This is a known gap that must be closed before runtime
-    // `extend` natives can ship** — the runtime needs the lambda body
-    // to evaluate per row. Two pieces are involved:
-    //
-    // 1. Carry the lambda in `RelationColumnLowered` (or a sibling
-    //    `ColSpecLiteral` field) instead of dropping it.
-    // 2. Bind the lambda parameter's type to the receiver's row type
-    //    so `$c.val` resolves at compile time. The single-arg lambda
-    //    case in `filter_lambda_param_binds_to_relation_row` already
-    //    proves the binding machinery works when the lambda is
-    //    preserved; the work is plumbing the receiver context into
-    //    column lowering.
-    //
-    // This test stays as a regression guard locking the current
-    // (incomplete) shape so a future change that starts preserving
-    // the lambda surfaces here, signalling that the deferred follow-up
-    // can be marked done.
+    // The lambda parameter's compile-time type is the synthetic
+    // `Any[1]` expectation set by `lower_relation_columns_from_specs`
+    // (the runtime binds row values through dynamic slot lookup on
+    // the row-tuple heap object, so precise compile-time inference
+    // for the param isn't required). This test therefore only
+    // asserts the lambda is preserved and carries the expected
+    // parameter name; it does not require the param type to carry a
+    // Relation layer.
     let source = r"###Pure
 import meta::pure::functions::relation::*;
 
@@ -352,21 +357,22 @@ function lambda_probe::extendTds(): Boolean[1]
     let model = compile_user("extend_probe.pure", source);
     let body = function_body(&model, &["lambda_probe", "extendTds"]);
 
-    // Lambda from the column-builder is currently dropped. The
-    // function body should contain ZERO `ExprKind::Lambda` nodes
-    // attributable to the FuncColSpec; the only lambdas would come
-    // from outer `let` desugarings (none here).
+    // The `walk` helper now descends into `ColSpecLiteral.init_lambda`,
+    // so the FuncColSpec's init lambda surfaces here.
     let lambdas = collect_lambda_params(&body);
-    assert!(
-        lambdas.is_empty(),
-        "extend's column-builder lambda is currently dropped; finding any lambda \
-         here means lower_column started preserving them — update this test to \
-         assert the new shape and lift the deferred follow-up. Found: {:?}",
+    assert_eq!(
+        lambdas.len(),
+        1,
+        "expected exactly one lambda (the FuncColSpec init); found {}: {:?}",
+        lambdas.len(),
         lambdas
             .iter()
             .map(|p| p.iter().map(|x| x.name.as_str()).collect::<Vec<_>>())
             .collect::<Vec<_>>(),
     );
+    let init_lambda = &lambdas[0];
+    assert_eq!(init_lambda.len(), 1, "FuncColSpec init has one param");
+    assert_eq!(init_lambda[0].name.as_str(), "c");
 
     // The ColSpecLiteral metadata is preserved, classified as `Func`.
     let cols = collect_col_spec_literals(&body);
