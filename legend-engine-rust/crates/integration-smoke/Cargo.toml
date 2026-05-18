@@ -31,4 +31,5 @@ legend-engine-rust-core-functions-variant-pure         = { path = "../core-funct
 smol_str                                               = { workspace = true }
 
 [dev-dependencies]
-legend-pure-runtime = { workspace = true }
+legend-pure-runtime                              = { workspace = true }
+legend-engine-rust-natives-functions-relation    = { path = "../natives-functions-relation" }

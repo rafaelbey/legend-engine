@@ -124,7 +124,7 @@ fn compile_user(name: &str, source: &str) -> PureModel {
 
 fn eval_function(source_name: &str, source: &str, fn_fqn: &[&str]) -> Value {
     let model = compile_user(source_name, source);
-    let registry = NativeRegistry::standard();
+    let registry = NativeRegistry::with_extensions(&[&legend_engine_rust_natives_functions_relation::RelationFunctionsExtension]);
     let mut eval = Evaluator::new(&model, &registry);
     let path: Vec<SmolStr> = fn_fqn.iter().map(|&s| SmolStr::new(s)).collect();
     let id = model

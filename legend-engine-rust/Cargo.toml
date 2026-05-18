@@ -21,6 +21,7 @@ members = [
     "crates/core-functions-unclassified-pure",
     "crates/core-functions-variant-pure",
     "crates/integration-smoke",
+    "crates/natives-functions-relation",
     "crates/natives-functions-unclassified",
 ]
 
@@ -37,6 +38,7 @@ legend-pure-core-platform = { path = "../../legend-pure/legend-pure-rust/crates/
 legend-pure-build         = { path = "../../legend-pure/legend-pure-rust/crates/build" }
 legend-pure-parser-pure   = { path = "../../legend-pure/legend-pure-rust/crates/pure" }
 legend-pure-runtime       = { path = "../../legend-pure/legend-pure-rust/crates/runtime" }
+legend-pure-dsl-tds       = { path = "../../legend-pure/legend-pure-rust/crates/dsl-tds" }
 
 # Standard
 smol_str = "0.3"
