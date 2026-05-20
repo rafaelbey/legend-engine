@@ -18,8 +18,9 @@
 
 use legend_pure_dsl_tds::csv::ParsedTDS;
 use legend_pure_parser_pure::types::ValueSpec;
+use smol_str::SmolStr;
 
-use legend_pure_runtime::error::PureException;
+use legend_pure_runtime::error::{PureException, PureRuntimeError};
 use legend_pure_runtime::m3_paths;
 use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, expect_args};
 use legend_pure_runtime::value::Value;
@@ -78,5 +79,105 @@ impl NativeFunction for Distinct {
 
     fn signature(&self) -> &'static str {
         "distinct(Relation<T>[1]):Relation<T>[1]"
+    }
+}
+
+/// Pure
+/// `distinct<X,T>(rel:Relation<T>[1], columns:ColSpecArray<X⊆T>[1])
+///   :Relation<X>[1]`.
+///
+/// Projects to the named columns, then dedups (same rules as the
+/// no-args overload).
+#[derive(Debug)]
+pub struct DistinctColSpecArray;
+
+impl NativeFunction for DistinctColSpecArray {
+    fn execute(
+        &self,
+        args: &[ValueSpec],
+        ctx: &mut dyn EvalContextTrait,
+    ) -> Result<Evaluated, PureException> {
+        expect_args("distinct (Relation, ColSpecArray)", args, 2)?;
+        let instance_value_id = m3_paths::resolve(ctx.model(), m3_paths::INSTANCE_VALUE);
+
+        // Read the requested column names off the ColSpecArray's
+        // `names: String[*]` slot. Mirrors `select.rs`'s
+        // `read_col_spec_array_names`.
+        let csa_value = ctx.evaluate(&args[1])?.into_value();
+        let csa_obj = unwrap_instance_value(&csa_value, instance_value_id, ctx)?;
+        let name_values = ctx
+            .heap()
+            .get_property_values(&csa_obj, "names")
+            .map_err(PureException::from)?;
+        let mut requested: Vec<SmolStr> = Vec::with_capacity(name_values.len());
+        for v in &name_values {
+            match v {
+                Value::String(s) => requested.push(s.clone()),
+                other => {
+                    return Err(PureException::from(PureRuntimeError::EvaluationError(
+                        format!(
+                            "distinct: ColSpecArray.names entry is not a String: {other:?}"
+                        ),
+                    )));
+                }
+            }
+        }
+        if requested.is_empty() {
+            return Err(PureException::from(PureRuntimeError::EvaluationError(
+                "distinct: ColSpecArray.names slot is empty".into(),
+            )));
+        }
+
+        let rel_value = ctx.evaluate(&args[0])?.into_value();
+        let tds_obj = unwrap_instance_value(&rel_value, instance_value_id, ctx)?;
+        let parsed = read_parsed_tds("distinct", &tds_obj, ctx)?;
+
+        // Project each row to the requested column set.
+        let mut indices: Vec<usize> = Vec::with_capacity(requested.len());
+        for name in &requested {
+            let idx = parsed
+                .columns
+                .iter()
+                .position(|c| c.name.as_str() == name.as_str())
+                .ok_or_else(|| {
+                    let available: Vec<&str> =
+                        parsed.columns.iter().map(|c| c.name.as_str()).collect();
+                    PureException::from(PureRuntimeError::EvaluationError(format!(
+                        "distinct: column '{name}' not present in receiver; have {available:?}"
+                    )))
+                })?;
+            indices.push(idx);
+        }
+
+        let new_columns: Vec<_> = indices.iter().map(|&i| parsed.columns[i].clone()).collect();
+        let projected_rows: Vec<Vec<_>> = parsed
+            .rows
+            .iter()
+            .map(|row| indices.iter().map(|&i| row[i].clone()).collect())
+            .collect();
+
+        // Then dedup the projected rows.
+        let mut deduped: Vec<Vec<Option<_>>> = Vec::with_capacity(projected_rows.len());
+        for row in &projected_rows {
+            if !deduped.iter().any(|kept| kept == row) {
+                deduped.push(row.clone());
+            }
+        }
+
+        let result = ParsedTDS {
+            csv: parsed.csv.clone(),
+            columns: new_columns,
+            rows: deduped,
+        };
+        let new_csv = render_canonical_csv(&result);
+        let tds_handle = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
+        ctx.heap_mut()
+            .mutate_add(&tds_handle, "csv", &[Value::String(new_csv.into())])
+            .map_err(PureException::from)?;
+        Ok(Evaluated::new(Value::Object(tds_handle)))
+    }
+
+    fn signature(&self) -> &'static str {
+        "distinct(Relation<T>[1], ColSpecArray<X⊆T>[1]):Relation<X>[1]"
     }
 }

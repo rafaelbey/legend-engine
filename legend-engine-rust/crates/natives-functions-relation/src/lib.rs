@@ -59,25 +59,29 @@ mod drop;
 mod extend;
 mod filter;
 mod limit;
+mod map;
 mod rename;
 mod select;
 mod size;
 mod sort;
 mod sort_info;
+mod tostring;
 
 pub use ascending::Ascending;
 pub use columns::Columns;
 pub use concatenate::Concatenate;
 pub use descending::Descending;
-pub use distinct::Distinct;
+pub use distinct::{Distinct, DistinctColSpecArray};
 pub use drop::Drop;
 pub use extend::ExtendFuncColSpec;
 pub use filter::Filter;
 pub use limit::Limit;
+pub use map::MapRelation;
 pub use rename::Rename;
 pub use select::{SelectColSpec, SelectColSpecArray};
 pub use size::Size;
 pub use sort::Sort;
+pub use tostring::{ToStringRelation, ToStringRelationTyped};
 
 use legend_pure_runtime::native::{NativeRegistry, RuntimeExtension};
 
@@ -95,6 +99,11 @@ impl RuntimeExtension for RelationFunctionsExtension {
     fn register_natives(&self, registry: &mut NativeRegistry) {
         registry.register("size_Relation_1__Integer_1_", Size);
         registry.register("distinct_Relation_1__Relation_1_", Distinct);
+        registry.register(
+            "distinct_Relation_1__ColSpecArray_1__Relation_1_",
+            DistinctColSpecArray,
+        );
+        registry.register("map_Relation_1__Function_1__V_MANY_", MapRelation);
         registry.register(
             "concatenate_Relation_1__Relation_1__Relation_1_",
             Concatenate,
@@ -119,5 +128,18 @@ impl RuntimeExtension for RelationFunctionsExtension {
         registry.register("sort_Relation_1__SortInfo_MANY__Relation_1_", Sort);
         registry.register("ascending_ColSpec_1__SortInfo_1_", Ascending);
         registry.register("descending_ColSpec_1__SortInfo_1_", Descending);
+        // `toString(Relation)` is Pure-defined as
+        // `<<PCT.function, PCT.platformOnly>>` in
+        // `core_functions_relation/.../toString.pure`. We register
+        // engine natives with the same mangled FQNs; the runtime's
+        // native lookup (in `eval.rs::call_function` step 2a) runs
+        // before falling through to the function body, so these
+        // override the Pure impl at runtime. The Pure body stays in
+        // source for compile-time signature checking.
+        registry.register("toString_Relation_1__String_1_", ToStringRelation);
+        registry.register(
+            "toString_Relation_1__Boolean_1__String_1_",
+            ToStringRelationTyped,
+        );
     }
 }
