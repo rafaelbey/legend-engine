@@ -442,21 +442,11 @@ fn pct_extend_testSimpleExtendFloat_MultipleExpressions() {
     );
 }
 
-/// Uses `extend(~[name:c|..., other:x|...])` — the `FuncColSpecArray`
-/// overload. We have `extend(Relation, FuncColSpec)` (single column)
-/// but not the array variant. Implementing it needs a
-/// `FuncColSpecArray` heap allocator (similar to
-/// `alloc_func_col_spec_literal`) + an `eval.rs` dispatch arm for
-/// `ColSpecArrayLiteral` kind=Func + a new engine native that walks
-/// the array's per-column `function` slots. Tractable but multi-file
-/// — deferred to a separate change.
-#[ignore = "engine-side: extend(Relation, FuncColSpecArray) overload not yet implemented"]
 #[test]
 fn pct_extend_testSimpleMultipleColumns() {
     run_pct_test("meta::pure::functions::relation::tests::extend::testSimpleMultipleColumns");
 }
 
-#[ignore = "same FuncColSpecArray overload gap as pct_extend_testSimpleMultipleColumns"]
 #[test]
 fn pct_extend_testSimpleMultipleColumns_MultipleExpressions() {
     run_pct_test(

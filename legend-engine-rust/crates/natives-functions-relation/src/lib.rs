@@ -73,7 +73,7 @@ pub use concatenate::Concatenate;
 pub use descending::Descending;
 pub use distinct::{Distinct, DistinctColSpecArray};
 pub use drop::Drop;
-pub use extend::ExtendFuncColSpec;
+pub use extend::{ExtendFuncColSpec, ExtendFuncColSpecArray};
 pub use filter::Filter;
 pub use limit::Limit;
 pub use map::MapRelation;
@@ -112,6 +112,10 @@ impl RuntimeExtension for RelationFunctionsExtension {
         registry.register(
             "extend_Relation_1__FuncColSpec_1__Relation_1_",
             ExtendFuncColSpec,
+        );
+        registry.register(
+            "extend_Relation_1__FuncColSpecArray_1__Relation_1_",
+            ExtendFuncColSpecArray,
         );
         registry.register("limit_Relation_1__Integer_1__Relation_1_", Limit);
         registry.register("drop_Relation_1__Integer_1__Relation_1_", Drop);

@@ -27,8 +27,7 @@
 #![allow(clippy::needless_pass_by_value)]
 
 use legend_pure_dsl_tds::csv::{ColumnType, ParsedColumn, TypedCell};
-use legend_pure_parser_pure::types::Multiplicity;
-use legend_pure_parser_pure::types::ValueSpec;
+use legend_pure_parser_pure::types::{ColSpecLiteralKind, ExprKind, Multiplicity, ValueSpec};
 use smol_str::SmolStr;
 
 use legend_pure_runtime::error::{PureException, PureRuntimeError};
@@ -124,6 +123,122 @@ impl NativeFunction for ExtendFuncColSpec {
 
     fn signature(&self) -> &'static str {
         "extend(Relation<T>[1], FuncColSpec<{T[1]->Any[0..1]},Z>[1]):Relation<T+Z>[1]"
+    }
+}
+
+/// `extend(Relation<T>[1], FuncColSpecArray<{T[1]->Any[*]},Z>[1])
+///   :Relation<T+Z>[1]`.
+///
+/// Multi-column variant: applies one init lambda per requested
+/// column, materialising each as a new column on the result relation.
+///
+/// **Reads the column list directly from the AST.** The native's
+/// `args[1]` is the `ColSpecArrayLiteral` ValueSpec carrying the
+/// per-column `RelationColumnLowered { name, init_lambda, … }`
+/// triples. Evaluating it via `ctx.evaluate` would round-trip through
+/// `eval.rs`'s ColSpecArrayLiteral arm, which currently materialises
+/// the heap form via the plain `alloc_col_spec_array_literal` and
+/// drops the per-column `function` slots (the FuncColSpecArray heap
+/// allocator hasn't landed pure-side). Side-stepping the heap form
+/// keeps this overload engine-only.
+///
+/// **Wrapped receivers** (`let cs = ~[...]; rel->extend($cs)`) fall
+/// through the `_` arm and produce a "FuncColSpecArray AST not found"
+/// error pointing at the same gap. Until the pure-side allocator
+/// lands, only direct-literal `~[...]` arguments are supported.
+#[derive(Debug)]
+pub struct ExtendFuncColSpecArray;
+
+impl NativeFunction for ExtendFuncColSpecArray {
+    fn execute(
+        &self,
+        args: &[ValueSpec],
+        ctx: &mut dyn EvalContextTrait,
+    ) -> Result<Evaluated, PureException> {
+        expect_args("extend (Relation, FuncColSpecArray)", args, 2)?;
+        let instance_value_id = m3_paths::resolve(ctx.model(), m3_paths::INSTANCE_VALUE);
+
+        // -- Source TDS --------------------------------------------------
+        let rel_value = ctx.evaluate(&args[0])?.into_value();
+        let tds_obj = unwrap_instance_value(&rel_value, instance_value_id, ctx)?;
+        let parsed = read_parsed_tds("extend", &tds_obj, ctx)?;
+
+        // -- Walk the AST for the ColSpecArrayLiteral's column triples ---
+        let cols_ast = match args[1].kind.as_ref() {
+            ExprKind::ColSpecArrayLiteral {
+                columns,
+                kind: ColSpecLiteralKind::Func,
+            } => columns,
+            other => {
+                return Err(PureException::from(PureRuntimeError::EvaluationError(
+                    format!(
+                        "extend (Relation, FuncColSpecArray): arg 2 must be a direct \
+                         ~[name:lam, …] literal; wrapped receivers (let-bound, function-\
+                         returned) aren't supported until the pure-side \
+                         FuncColSpecArray heap allocator lands. Got {other:?}"
+                    ),
+                )));
+            }
+        };
+
+        // -- For each (column-name, init-lambda) materialise the lambda
+        //    Value once, then evaluate per row.
+        let mut col_handles: Vec<(SmolStr, Value)> = Vec::with_capacity(cols_ast.len());
+        for col in cols_ast {
+            let Some(init) = col.init_lambda.as_ref() else {
+                return Err(PureException::from(PureRuntimeError::EvaluationError(
+                    format!(
+                        "extend (Relation, FuncColSpecArray): column '{}' has no init \
+                         lambda; FuncColSpecArray entries must carry one",
+                        col.name
+                    ),
+                )));
+            };
+            let lambda_val = ctx.evaluate(init)?.into_value();
+            col_handles.push((col.name.clone(), lambda_val));
+        }
+
+        // -- Per-row evaluation, per new column --------------------------
+        let n_rows = parsed.rows.len();
+        let mut new_columns_cells: Vec<Vec<Option<TypedCell>>> =
+            vec![Vec::with_capacity(n_rows); col_handles.len()];
+        for row in &parsed.rows {
+            let row_tuple = build_row_tuple(&parsed.columns, row, ctx)?;
+            for (col_idx, (_, lambda_val)) in col_handles.iter().enumerate() {
+                let val = ctx.call_function(lambda_val, &[Value::Object(row_tuple.clone())])?;
+                new_columns_cells[col_idx].push(value_to_typed_cell(&val));
+            }
+        }
+
+        // -- New column metadata + extended rows -------------------------
+        let mut new_columns = parsed.columns.clone();
+        for ((name, _), cells) in col_handles.iter().zip(new_columns_cells.iter()) {
+            let (inferred_type, inferred_mult) = infer_column_type_and_mult(cells);
+            new_columns.push(ParsedColumn {
+                name: name.clone(),
+                type_tag: inferred_type,
+                multiplicity: inferred_mult,
+            });
+        }
+        let mut new_rows: Vec<Vec<Option<TypedCell>>> = Vec::with_capacity(n_rows);
+        for (row_idx, row) in parsed.rows.iter().enumerate() {
+            let mut extended = row.clone();
+            for col_cells in &new_columns_cells {
+                extended.push(col_cells[row_idx].clone());
+            }
+            new_rows.push(extended);
+        }
+
+        let new_csv = render_csv_from_columns_and_rows(&new_columns, &new_rows);
+        let new_tds = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
+        ctx.heap_mut()
+            .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
+            .map_err(PureException::from)?;
+        Ok(Evaluated::new(Value::Object(new_tds)))
+    }
+
+    fn signature(&self) -> &'static str {
+        "extend(Relation<T>[1], FuncColSpecArray<{T[1]->Any[*]},Z>[1]):Relation<T+Z>[1]"
     }
 }
 
