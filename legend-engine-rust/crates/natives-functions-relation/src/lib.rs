@@ -78,7 +78,7 @@ pub use filter::Filter;
 pub use limit::Limit;
 pub use map::MapRelation;
 pub use rename::Rename;
-pub use select::{SelectColSpec, SelectColSpecArray};
+pub use select::{SelectAll, SelectColSpec, SelectColSpecArray};
 pub use size::Size;
 pub use sort::Sort;
 pub use tostring::{ToStringRelation, ToStringRelationTyped};
@@ -119,6 +119,7 @@ impl RuntimeExtension for RelationFunctionsExtension {
             "rename_Relation_1__ColSpec_1__ColSpec_1__Relation_1_",
             Rename,
         );
+        registry.register("select_Relation_1__Relation_1_", SelectAll);
         registry.register("select_Relation_1__ColSpec_1__Relation_1_", SelectColSpec);
         registry.register(
             "select_Relation_1__ColSpecArray_1__Relation_1_",

@@ -180,60 +180,46 @@ fn run_pct_test(pct_test_fqn: &str) {
 }
 
 // ---------------------------------------------------------------------------
-// First-wave PCT tests — `filter`
+// PCT tests — `filter`
 // ---------------------------------------------------------------------------
 
-/// Locks the simplest filter PCT shape. Expects to fail at the
-/// `assertEquals(...->toString())` site until `toString(Relation)` and
-/// its dependency chain are wired through the runtime (Phase B).
 #[test]
 fn pct_filter_testSimpleFilterShared() {
     run_pct_test("meta::pure::functions::relation::tests::filter::testSimpleFilterShared");
 }
 
+#[test]
+fn pct_filter_testSimpleFilter_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::filter::testSimpleFilter_MultipleExpressions",
+    );
+}
+
 // ---------------------------------------------------------------------------
-// First-wave PCT tests — `sort`
+// PCT tests — `sort`
 // ---------------------------------------------------------------------------
 
-/// Currently fails because `$res->map(x|$x.id)` dispatches to
-/// `meta::pure::functions::collection::map<T,V|m>(col:T[m], …):V[m]`
-/// instead of
-/// `meta::pure::functions::relation::map<T,V>(rel:Relation<T>[1], …):V[*]`.
-///
-/// $res's resolved type is `Relation<{id:Integer, name:String}>[1]`
-/// (the upstream Z-propagation fix binds it concretely). Both
-/// overloads then survive Phase-1 of `narrow_candidates_by_type`:
-///
-/// - **`relation::map`** — param0=`Relation<T>[1]`. Direct nominal match.
-/// - **`collection::map`** — param0=`T[m]` (Generic). The Generic
-///   permissive arm of `is_type_compatible` returns true unconditionally,
-///   so this overload also passes Phase-1.
-///
-/// Phase-2 ranks both candidates with the same score; Phase-3
-/// most-specific-parameter elimination can't compare a Named param to
-/// a Generic param, so neither dominates and the dispatcher picks the
-/// wrong one (or it's order-dependent and we're losing).
-///
-/// **Concern for the pure-side expert** (no engine fix possible): the
-/// narrower needs a tiebreak rule that prefers the overload whose
-/// param0 is a concrete `Named` over the overload whose param0 is a
-/// `Generic`, when the arg's resolved type is concretely `Named` and
-/// the candidates' element ids would actually accept it. Similar shape
-/// to the sort/extend narrowing fix that landed via the Z-prop
-/// commits; this is the same root cause (Generic-vs-Named overload
-/// dominance) one level deeper in the dispatch ranking.
-///
-/// Once the narrower lands, this test should turn green without any
-/// engine change — `MapRelation` is wired and registered as
-/// `map_Relation_1__Function_1__V_MANY_`.
+/// Currently fails: `$res->map(x|$x.id)` dispatches to
+/// `meta::pure::functions::collection::map<T,V|m>(col:T[m],…)` instead
+/// of `meta::pure::functions::relation::map<T,V>(rel:Relation<T>[1],…)`.
+/// See `pct_size_testGroupBySize` and friends — same pure-side
+/// narrowing-tiebreak gap (Named-vs-Generic param0 dominance).
 #[ignore = "blocked on pure-side narrower preferring relation::map over collection::map for Relation-typed receiver"]
 #[test]
 fn pct_sort_testSimpleSortShared() {
     run_pct_test("meta::pure::functions::relation::tests::sort::testSimpleSortShared");
 }
 
+#[ignore = "uses $res->map(x|$x.col), same narrowing gap as pct_sort_testSimpleSortShared"]
+#[test]
+fn pct_sort_testSimpleSort_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::sort::testSimpleSort_MultipleExpressions",
+    );
+}
+
 // ---------------------------------------------------------------------------
-// First-wave PCT tests — `distinct`
+// PCT tests — `distinct`
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -241,11 +227,296 @@ fn pct_distinct_testDistinctSingle() {
     run_pct_test("meta::pure::functions::relation::tests::distinct::testDistinctSingle");
 }
 
+#[test]
+fn pct_distinct_testDistinctSingle_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::distinct::testDistinctSingle_MultipleExpressions",
+    );
+}
+
+#[test]
+fn pct_distinct_testDistinctMultiple() {
+    run_pct_test("meta::pure::functions::relation::tests::distinct::testDistinctMultiple");
+}
+
+#[test]
+fn pct_distinct_testDistinctMultiple_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::distinct::testDistinctMultiple_MultipleExpressions",
+    );
+}
+
+#[test]
+fn pct_distinct_testDistinctAll() {
+    run_pct_test("meta::pure::functions::relation::tests::distinct::testDistinctAll");
+}
+
+#[test]
+fn pct_distinct_testDistinctAll_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::distinct::testDistinctAll_MultipleExpressions",
+    );
+}
+
 // ---------------------------------------------------------------------------
-// First-wave PCT tests — `size`
+// PCT tests — `concatenate`
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_concatenate_testSimpleConcatenateShared() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::concatenate::testSimpleConcatenateShared",
+    );
+}
+
+#[test]
+fn pct_concatenate_testSimpleConcatenate_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::concatenate::testSimpleConcatenate_MultipleExpressions",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// PCT tests — `rename`
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_rename_testSimpleRenameShared() {
+    run_pct_test("meta::pure::functions::relation::tests::rename::testSimpleRenameShared");
+}
+
+#[test]
+fn pct_rename_testSimpleRename_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::rename::testSimpleRename_MultipleExpressions",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// PCT tests — `limit`
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_limit_testSimpleLimitShared() {
+    run_pct_test("meta::pure::functions::relation::tests::limit::testSimpleLimitShared");
+}
+
+#[test]
+fn pct_limit_testSimpleLimit_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::limit::testSimpleLimit_MultipleExpressions",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// PCT tests — `drop`
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_drop_testSimpleDropShared() {
+    run_pct_test("meta::pure::functions::relation::tests::drop::testSimpleDropShared");
+}
+
+#[test]
+fn pct_drop_testSimpleDrop_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::drop::testSimpleDrop_MultipleExpressions",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// PCT tests — `select`
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_select_testSingleColSelectShared() {
+    run_pct_test("meta::pure::functions::relation::tests::select::testSingleColSelectShared");
+}
+
+#[test]
+fn pct_select_testSingleColSelect_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::select::testSingleColSelect_MultipleExpressions",
+    );
+}
+
+#[test]
+fn pct_select_testMultiColsSelectShared() {
+    run_pct_test("meta::pure::functions::relation::tests::select::testMultiColsSelectShared");
+}
+
+#[test]
+fn pct_select_testMultiColsSelect_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::select::testMultiColsSelect_MultipleExpressions",
+    );
+}
+
+/// `~'other kind'` — quoted column name carrying special chars (the
+/// space in this case). Runtime fails with
+/// `select: column ''other kind'' not present in receiver;
+///  have ["val", "str", "other kind"]` — the looked-up name carries
+/// the surrounding quotes (`'other kind'`) while the TDS column was
+/// parsed without them (`other kind`).
+///
+/// The mismatch lives in the ColSpec literal lower: `~'name'` should
+/// strip surrounding `'` to materialise just `name` as the `name`
+/// slot. Header-parsing for the TDS literal does this correctly
+/// (column appears as `other kind`); the ColSpec lower doesn't.
+#[ignore = "pure-side: ColSpec lower for ~'name' should strip surrounding quotes from the name slot"]
+#[test]
+fn pct_select_testSingleSelectWithQuotedColumn() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::select::testSingleSelectWithQuotedColumn",
+    );
+}
+
+#[ignore = "same quoted-name lowering gap as pct_select_testSingleSelectWithQuotedColumn"]
+#[test]
+fn pct_select_testSingleSelectWithQuotedColumn_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::select::testSingleSelectWithQuotedColumn_MultipleExpressions",
+    );
+}
+
+#[test]
+fn pct_select_testSelectAll() {
+    run_pct_test("meta::pure::functions::relation::tests::select::testSelectAll");
+}
+
+#[test]
+fn pct_select_testSelectAll_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::select::testSelectAll_MultipleExpressions",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// PCT tests — `extend` (FuncColSpec only; OLAP variants need `over`/`_Window`)
+// ---------------------------------------------------------------------------
+
+/// Currently fails with `plus_String_MANY__String_1_: Type mismatch:
+/// expected Object, got Integer`. Lambda body is
+/// `$c.str->toOne() + $c.val->toOne()->toString()` — looks like the
+/// `->toString()` postfix isn't applied to `$c.val->toOne()` before
+/// `plus_String` dispatches; the right-hand arg arrives as Integer,
+/// not String. Numeric extend variants (`* 2`, etc.) pass cleanly,
+/// so the issue is specific to the `String + Numeric->toString()`
+/// chain at the lambda body lowering / operator-precedence layer
+/// (pure-side).
+#[ignore = "pure-side: $c.val->toOne()->toString() chain doesn't reduce to String before plus dispatch"]
+#[test]
+fn pct_extend_testSimpleExtendStrShared() {
+    run_pct_test("meta::pure::functions::relation::tests::extend::testSimpleExtendStrShared");
+}
+
+#[ignore = "same chain-to-String issue as pct_extend_testSimpleExtendStrShared"]
+#[test]
+fn pct_extend_testSimpleExtendStr_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testSimpleExtendStr_MultipleExpressions",
+    );
+}
+
+#[test]
+fn pct_extend_testSimpleExtendInt() {
+    run_pct_test("meta::pure::functions::relation::tests::extend::testSimpleExtendInt");
+}
+
+#[test]
+fn pct_extend_testSimpleExtendInt_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testSimpleExtendInt_MultipleExpressions",
+    );
+}
+
+#[test]
+fn pct_extend_testSimpleExtendFloat() {
+    run_pct_test("meta::pure::functions::relation::tests::extend::testSimpleExtendFloat");
+}
+
+#[test]
+fn pct_extend_testSimpleExtendFloat_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testSimpleExtendFloat_MultipleExpressions",
+    );
+}
+
+/// Uses `extend(~[name:c|..., other:x|...])` — the `FuncColSpecArray`
+/// overload. We have `extend(Relation, FuncColSpec)` (single column)
+/// but not the array variant. Implementing it needs a
+/// `FuncColSpecArray` heap allocator (similar to
+/// `alloc_func_col_spec_literal`) + an `eval.rs` dispatch arm for
+/// `ColSpecArrayLiteral` kind=Func + a new engine native that walks
+/// the array's per-column `function` slots. Tractable but multi-file
+/// — deferred to a separate change.
+#[ignore = "engine-side: extend(Relation, FuncColSpecArray) overload not yet implemented"]
+#[test]
+fn pct_extend_testSimpleMultipleColumns() {
+    run_pct_test("meta::pure::functions::relation::tests::extend::testSimpleMultipleColumns");
+}
+
+#[ignore = "same FuncColSpecArray overload gap as pct_extend_testSimpleMultipleColumns"]
+#[test]
+fn pct_extend_testSimpleMultipleColumns_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testSimpleMultipleColumns_MultipleExpressions",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// PCT tests — `size`
 // ---------------------------------------------------------------------------
 
 #[test]
 fn pct_size_testSimpleSize() {
     run_pct_test("meta::pure::functions::relation::tests::size::testSimpleSize");
+}
+
+#[test]
+fn pct_size_testSimpleSize_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::size::testSimpleSize_MultipleExpressions",
+    );
+}
+
+#[test]
+fn pct_size_testComparisonOperationAfterSize() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::size::testComparisonOperationAfterSize",
+    );
+}
+
+#[test]
+fn pct_size_testComparisonOperationAfterSize_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::size::testComparisonOperationAfterSize_MultipleExpressions",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// PCT tests — `eval(ColSpec, row)`
+// ---------------------------------------------------------------------------
+
+/// `eval(ColSpec, row)` is Pure-defined in `eval.pure:18` and its body
+/// walks `$col->genericType().typeArguments->at(0).rawType->toOne()
+///   ->cast(@RelationType<Any>).columns->toOne()
+///   ->cast(@Column<Nil,Z|0..1>)->eval($row)`.
+///
+/// Currently fails with
+/// `The system is trying to get an element at offset 0 where the
+///  collection is of size 0` — the reflection chain expects the
+/// ColSpec's `classifierGenericType.typeArguments[0]` to have a
+/// non-empty `columns` slot, but the heap-allocated ColSpec built by
+/// `alloc_col_spec_literal` doesn't carry it (the inner
+/// `RelationType` shape isn't materialised).
+///
+/// Either the platform reflection chain is too strict for our heap
+/// shape, or our `alloc_col_spec_literal` needs to populate the
+/// inner-RelationType.columns chain. Both are tractable but live
+/// upstream / span pure+engine boundary.
+#[ignore = "eval(ColSpec, row) reflection chain hits empty columns slot; needs ColSpec heap-shape work or Pure-body simplification"]
+#[test]
+fn pct_eval_testSimpleEval() {
+    run_pct_test("meta::pure::functions::relation::tests::eval::testSimpleEval");
 }

@@ -40,6 +40,42 @@ use legend_pure_runtime::value::Value;
 
 use legend_pure_runtime::native::relation::shared::{read_parsed_tds, unwrap_instance_value};
 
+/// `select<T>(r:Relation<T>[1]):Relation<T>[1]`.
+///
+/// No-arg select — returns every column. The platform's PCT uses this
+/// for `relation->select()` "all columns" identity projection.
+/// Implemented by reading the receiver TDS and re-emitting its
+/// canonical CSV; no column selection happens.
+#[derive(Debug)]
+pub struct SelectAll;
+
+impl NativeFunction for SelectAll {
+    fn execute(
+        &self,
+        args: &[ValueSpec],
+        ctx: &mut dyn EvalContextTrait,
+    ) -> Result<Evaluated, PureException> {
+        expect_args("select (Relation)", args, 1)?;
+        let instance_value_id = m3_paths::resolve(ctx.model(), m3_paths::INSTANCE_VALUE);
+        let rel_value = ctx.evaluate(&args[0])?.into_value();
+        let tds_obj = unwrap_instance_value(&rel_value, instance_value_id, ctx)?;
+        let parsed = read_parsed_tds("select", &tds_obj, ctx)?;
+        // Identity re-emit. Canonical CSV from the current parsed
+        // structure (so a no-op `select()` round-trips through the
+        // same normalisation any other relation native applies).
+        let new_csv = legend_pure_runtime::native::relation::shared::render_canonical_csv(&parsed);
+        let new_tds = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
+        ctx.heap_mut()
+            .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
+            .map_err(PureException::from)?;
+        Ok(Evaluated::new(Value::Object(new_tds)))
+    }
+
+    fn signature(&self) -> &'static str {
+        "select(Relation<T>[1]):Relation<T>[1]"
+    }
+}
+
 /// `select<T,Z>(r:Relation<T>[1], cs:ColSpec<Z⊆T>[1]):Relation<Z>[1]`.
 ///
 /// One column. The column's name lives on the ColSpec's `name` slot.
