@@ -25,4 +25,5 @@ legend-pure-runtime     = { workspace = true }
 legend-pure-parser-pure = { workspace = true }
 legend-pure-dsl-tds     = { workspace = true }
 smol_str                = { workspace = true }
+linkme                  = { workspace = true }
 im-rc                   = "15.1"

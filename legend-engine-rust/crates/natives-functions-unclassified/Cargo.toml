@@ -23,6 +23,7 @@ repository.workspace = true
 [dependencies]
 legend-pure-runtime     = { workspace = true }
 legend-pure-parser-pure = { workspace = true }
+linkme                  = { workspace = true }
 
 [dev-dependencies]
 legend-pure-core-platform                           = { workspace = true }

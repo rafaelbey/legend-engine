@@ -42,6 +42,7 @@ legend-pure-dsl-tds       = { path = "../../legend-pure/legend-pure-rust/crates/
 
 # Standard
 smol_str = "0.3"
+linkme   = "0.3"
 
 [profile.dev]
 split-debuginfo = "unpacked"

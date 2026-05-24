@@ -83,13 +83,27 @@ pub use size::Size;
 pub use sort::Sort;
 pub use tostring::{ToStringRelation, ToStringRelationTyped};
 
-use legend_pure_runtime::native::{NativeRegistry, RuntimeExtension};
+use legend_pure_runtime::native::{NativeRegistry, RUNTIME_EXTENSIONS, RuntimeExtension};
+use linkme::distributed_slice;
 
 /// Registers every native shipped by this crate into a
 /// [`NativeRegistry`]. The canonical entry point for Engine consumers
 /// who want to evaluate `core_functions_relation` Pure source.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RelationFunctionsExtension;
+
+/// Self-registration into the runtime's `RUNTIME_EXTENSIONS`
+/// distributed slice so any binary or cdylib that depends on this
+/// crate picks up the relation natives via
+/// `NativeRegistry::discovered()` with no per-binary wiring.
+///
+/// The existing `NativeRegistry::with_extensions(&[&RelationFunctionsExtension])`
+/// composition path (used by `integration-smoke`) is unaffected —
+/// `discovered()` and `with_extensions()` both call into
+/// `register_natives` on the same singleton.
+#[distributed_slice(RUNTIME_EXTENSIONS)]
+static RELATION_FUNCTIONS_EXTENSION: &(dyn RuntimeExtension + Sync) =
+    &RelationFunctionsExtension;
 
 impl RuntimeExtension for RelationFunctionsExtension {
     fn name(&self) -> &'static str {

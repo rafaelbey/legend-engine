@@ -149,7 +149,7 @@ function mutate_add_probe::appendItems(): String[*]
         &["mutate_add_probe", "appendItems"],
     );
     match result {
-        Value::Collection(items) => {
+        Value::Collection(ref items) => {
             let strs: Vec<String> = items
                 .iter()
                 .map(|v| match v {
@@ -217,8 +217,8 @@ function mutate_add_probe::seedEmpty(): String[*]
         &["mutate_add_probe", "seedEmpty"],
     );
     match result {
-        Value::String(s) => assert_eq!(s.as_str(), "first"),
-        Value::Collection(items) if items.len() == 1 => match &items[0] {
+        Value::String(ref s) => assert_eq!(s.as_str(), "first"),
+        Value::Collection(ref items) if items.len() == 1 => match &items[0] {
             Value::String(s) => assert_eq!(s.as_str(), "first"),
             other => panic!("expected single String, got {other:?}"),
         },

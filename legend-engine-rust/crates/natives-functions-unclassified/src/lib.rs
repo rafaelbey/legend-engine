@@ -46,10 +46,11 @@
 use legend_pure_parser_pure::types::ValueSpec;
 use legend_pure_runtime::error::{PureException, PureRuntimeError};
 use legend_pure_runtime::native::{
-    EvalContextTrait, Evaluated, NativeFunction, NativeRegistry, RuntimeExtension, expect_args,
-    force_all,
+    EvalContextTrait, Evaluated, NativeFunction, NativeRegistry, RUNTIME_EXTENSIONS,
+    RuntimeExtension, expect_args, force_all,
 };
 use legend_pure_runtime::value::Value;
+use linkme::distributed_slice;
 
 // ---------------------------------------------------------------------------
 // mutateAdd<T>(T[1], String[1], Any[*]):T[1]
@@ -124,10 +125,6 @@ impl NativeFunction for MutateAdd {
 
         Ok(Evaluated::new(Value::Object(obj)))
     }
-
-    fn signature(&self) -> &'static str {
-        "mutateAdd<T>(obj:T[1], property:String[1], value:Any[*]):T[1]"
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -152,3 +149,13 @@ impl RuntimeExtension for FunctionsUnclassifiedExtension {
         registry.register("mutateAdd_T_1__String_1__Any_MANY__T_1_", MutateAdd);
     }
 }
+
+/// Self-registration into the runtime's `RUNTIME_EXTENSIONS`
+/// distributed slice so any binary or cdylib that depends on this
+/// crate picks up the unclassified natives via
+/// `NativeRegistry::discovered()` with no per-binary wiring. The
+/// existing `with_extensions(&[&FunctionsUnclassifiedExtension])` path
+/// (used by `integration-smoke`) is unaffected.
+#[distributed_slice(RUNTIME_EXTENSIONS)]
+static FUNCTIONS_UNCLASSIFIED_EXTENSION: &(dyn RuntimeExtension + Sync) =
+    &FunctionsUnclassifiedExtension;
