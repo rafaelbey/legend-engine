@@ -1,0 +1,7 @@
+# Workspace-local cargo aliases.
+#
+# `cargo gen-classpath` regenerates legend-pure-classpath.toml at the
+# workspace root from every *.definition.json on disk. One-shot; the
+# generated TOML is committed.
+[alias]
+gen-classpath = "run --package xtask --quiet -- gen-classpath"

@@ -23,6 +23,7 @@ members = [
     "crates/integration-smoke",
     "crates/natives-functions-relation",
     "crates/natives-functions-unclassified",
+    "crates/xtask",
 ]
 
 [workspace.package]
