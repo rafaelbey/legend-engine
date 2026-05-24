@@ -15,6 +15,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/cli",
     "crates/core-functions-json-pure",
     "crates/core-functions-relation-pure",
     "crates/core-functions-standard-pure",
@@ -40,6 +41,7 @@ legend-pure-build         = { path = "../../legend-pure/legend-pure-rust/crates/
 legend-pure-parser-pure   = { path = "../../legend-pure/legend-pure-rust/crates/pure" }
 legend-pure-runtime       = { path = "../../legend-pure/legend-pure-rust/crates/runtime" }
 legend-pure-dsl-tds       = { path = "../../legend-pure/legend-pure-rust/crates/dsl-tds" }
+legend-cli                = { path = "../../legend-pure/legend-pure-rust/crates/cli" }
 
 # Standard
 smol_str = "0.3"
