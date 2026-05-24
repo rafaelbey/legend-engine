@@ -120,10 +120,6 @@ impl NativeFunction for ExtendFuncColSpec {
             .map_err(PureException::from)?;
         Ok(Evaluated::new(Value::Object(new_tds)))
     }
-
-    fn signature(&self) -> &'static str {
-        "extend(Relation<T>[1], FuncColSpec<{T[1]->Any[0..1]},Z>[1]):Relation<T+Z>[1]"
-    }
 }
 
 /// `extend(Relation<T>[1], FuncColSpecArray<{T[1]->Any[*]},Z>[1])
@@ -235,10 +231,6 @@ impl NativeFunction for ExtendFuncColSpecArray {
             .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
             .map_err(PureException::from)?;
         Ok(Evaluated::new(Value::Object(new_tds)))
-    }
-
-    fn signature(&self) -> &'static str {
-        "extend(Relation<T>[1], FuncColSpecArray<{T[1]->Any[*]},Z>[1]):Relation<T+Z>[1]"
     }
 }
 

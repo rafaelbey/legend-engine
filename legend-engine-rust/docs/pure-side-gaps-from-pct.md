@@ -1,22 +1,39 @@
 # Pure-side gaps surfaced by the engine PCT runner
 
-Four narrowing / lowering gaps in `legend-pure-rust` block PCT
-coverage that's otherwise within reach. Each gap is locked by an
-`#[ignore]`d test in
-`legend-engine-rust/crates/integration-smoke/tests/pct_relation_smoke.rs`;
-this document collects the diagnoses + suggested fix surfaces so an
-expert can pick them up.
+> **Status note (post 2026-05-24 rebase):** the original four
+> concerns this doc raised — narrower Named-vs-Generic tiebreak,
+> quoted-name lowering, `alloc_col_spec_literal` RelationType wrap,
+> and `String + Numeric->toString()` chain — are partially fixed:
+>
+> - **#1 Named-over-Generic narrowing** — FIXED by
+>   `d8ec4725743 fix(pure/resolve): Phase-3 domination respects
+>   Named-over-Generic specificity`. `pct_sort_*` tests now pass.
+> - **#3 Quoted-name ColSpec lowering** — FIXED by
+>   `9a987c06886 fix(parser): strip quotes on ~'col name' column
+>   specs`. `pct_select_testSingleSelectWithQuotedColumn*` now pass.
+> - **#4 `eval(ColSpec, row)` reflection chain** — partial fix in
+>   `d8cf20a1549 fix(runtime): alloc_col_spec_literal wraps a
+>   RelationType per platform spec`, but the test still trips on a
+>   downstream chain step; remains `#[ignore]`d.
+> - **#2 `String + Numeric->toString()` chain** — `45d728d7923 test
+>   (runtime): pin String + Integer->toString() dispatcher behavior`
+>   pinned the current (broken) behaviour as a regression lock but
+>   no fix landed yet. Remains `#[ignore]`d on three engine tests.
+>
+> Current engine workspace: **89 passed / 0 failed / 8 ignored**.
 
+Two narrowing / lowering gaps remain in `legend-pure-rust`. Each is
+locked by `#[ignore]`d tests in
+`legend-engine-rust/crates/integration-smoke/tests/pct_relation_smoke.rs`.
 When a fix lands, lift the corresponding `#[ignore]` — the test
 turns green without any engine-side change.
 
-Current engine workspace: **83 passed / 0 failed / 7 ignored**.
-Lifting all four would reach **~90 / 0 / 0** on the present test
-set.
+(The four original entries below remain in this doc for traceability;
+section status markers reflect their current state.)
 
 ---
 
-## #1 — Narrower can't tiebreak `relation::map` vs `collection::map` when arg0 is a Generic-typed receiver
+## #1 — Narrower can't tiebreak `relation::map` vs `collection::map` when arg0 is a Generic-typed receiver — **FIXED** (`d8ec4725743`)
 
 **Affected PCT tests**
 
@@ -93,7 +110,7 @@ Locking test (turns green on fix):
 
 ---
 
-## #2 — `String + Numeric->toString()` chain doesn't reduce before `plus_String` dispatch
+## #2 — `String + Numeric->toString()` chain doesn't reduce before `plus_String` dispatch — **still open**
 
 **Affected PCT tests**
 
@@ -165,7 +182,7 @@ extend / relation natives.
 
 ---
 
-## #3 — `~'name'` (quoted-name ColSpec literal) keeps the `'` quotes in the lowered `name` slot
+## #3 — `~'name'` (quoted-name ColSpec literal) keeps the `'` quotes in the lowered `name` slot — **FIXED** (`9a987c06886`)
 
 **Affected PCT tests**
 
@@ -239,7 +256,7 @@ the lowering retained the quotes.
 
 ---
 
-## #4 — `eval(ColSpec, row)` Pure body hits an empty `columns` slot
+## #4 — `eval(ColSpec, row)` Pure body hits an empty `columns` slot — **still open** (partial fix in `d8cf20a1549`)
 
 **Affected PCT test**
 

@@ -60,18 +60,21 @@ impl NativeFunction for MapRelation {
 
         // Per-row evaluation. Lambda result is `V[*]`; flatten
         // Collection results, drop Unit, otherwise push as a scalar.
+        // Borrow-pattern match because `Value` now implements `Drop`
+        // (iterative-Drop refactor upstream); destructure-by-value
+        // would move out of a Dropful enum.
         let mut out: PVector<Value> = PVector::new();
         for row in &parsed.rows {
             let row_tuple = build_row_tuple(&parsed.columns, row, ctx)?;
             let v = ctx.call_function(&lambda_val, &[Value::Object(row_tuple)])?;
-            match v {
+            match &v {
                 Value::Collection(inner) => {
                     for item in inner.iter() {
                         out.push_back(item.clone());
                     }
                 }
                 Value::Unit => {}
-                other => out.push_back(other),
+                _ => out.push_back(v.clone()),
             }
         }
         Ok(Evaluated::new(if out.is_empty() {
@@ -81,9 +84,5 @@ impl NativeFunction for MapRelation {
         } else {
             Value::Collection(Box::new(out))
         }))
-    }
-
-    fn signature(&self) -> &'static str {
-        "map(Relation<T>[1], Function<{T[1]->V[*]}>[1]):V[*]"
     }
 }

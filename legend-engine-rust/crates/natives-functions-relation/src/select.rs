@@ -70,10 +70,6 @@ impl NativeFunction for SelectAll {
             .map_err(PureException::from)?;
         Ok(Evaluated::new(Value::Object(new_tds)))
     }
-
-    fn signature(&self) -> &'static str {
-        "select(Relation<T>[1]):Relation<T>[1]"
-    }
 }
 
 /// `select<T,Z>(r:Relation<T>[1], cs:ColSpec<Z⊆T>[1]):Relation<Z>[1]`.
@@ -91,10 +87,6 @@ impl NativeFunction for SelectColSpec {
         expect_args("select (Relation, ColSpec)", args, 2)?;
         let names = read_col_spec_name(args, ctx)?;
         project_tds(args, &names, ctx)
-    }
-
-    fn signature(&self) -> &'static str {
-        "select(Relation<T>[1], ColSpec<Z⊆T>[1]):Relation<Z>[1]"
     }
 }
 
@@ -114,10 +106,6 @@ impl NativeFunction for SelectColSpecArray {
         expect_args("select (Relation, ColSpecArray)", args, 2)?;
         let names = read_col_spec_array_names(args, ctx)?;
         project_tds(args, &names, ctx)
-    }
-
-    fn signature(&self) -> &'static str {
-        "select(Relation<T>[1], ColSpecArray<Z⊆T>[1]):Relation<Z>[1]"
     }
 }
 

@@ -77,10 +77,6 @@ impl NativeFunction for ToStringRelation {
         let s = render_tds(&parsed, false);
         Ok(Evaluated::new(Value::String(SmolStr::new(&s))))
     }
-
-    fn signature(&self) -> &'static str {
-        "toString(Relation<T>[1]):String[1]"
-    }
 }
 
 /// `toString(Relation<T>[1], typesAndMuls:Boolean[1]):String[1]` — engine
@@ -109,10 +105,6 @@ impl NativeFunction for ToStringRelationTyped {
         };
         let s = render_tds(&parsed, typed_and_muls);
         Ok(Evaluated::new(Value::String(SmolStr::new(&s))))
-    }
-
-    fn signature(&self) -> &'static str {
-        "toString(Relation<T>[1], Boolean[1]):String[1]"
     }
 }
 

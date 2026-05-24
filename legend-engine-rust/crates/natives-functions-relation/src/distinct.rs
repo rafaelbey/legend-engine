@@ -76,10 +76,6 @@ impl NativeFunction for Distinct {
             .map_err(PureException::from)?;
         Ok(Evaluated::new(Value::Object(tds_handle)))
     }
-
-    fn signature(&self) -> &'static str {
-        "distinct(Relation<T>[1]):Relation<T>[1]"
-    }
 }
 
 /// Pure
@@ -175,9 +171,5 @@ impl NativeFunction for DistinctColSpecArray {
             .mutate_add(&tds_handle, "csv", &[Value::String(new_csv.into())])
             .map_err(PureException::from)?;
         Ok(Evaluated::new(Value::Object(tds_handle)))
-    }
-
-    fn signature(&self) -> &'static str {
-        "distinct(Relation<T>[1], ColSpecArray<X⊆T>[1]):Relation<X>[1]"
     }
 }

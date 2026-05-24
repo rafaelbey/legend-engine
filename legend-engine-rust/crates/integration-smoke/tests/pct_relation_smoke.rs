@@ -199,18 +199,11 @@ fn pct_filter_testSimpleFilter_MultipleExpressions() {
 // PCT tests — `sort`
 // ---------------------------------------------------------------------------
 
-/// Currently fails: `$res->map(x|$x.id)` dispatches to
-/// `meta::pure::functions::collection::map<T,V|m>(col:T[m],…)` instead
-/// of `meta::pure::functions::relation::map<T,V>(rel:Relation<T>[1],…)`.
-/// See `pct_size_testGroupBySize` and friends — same pure-side
-/// narrowing-tiebreak gap (Named-vs-Generic param0 dominance).
-#[ignore = "blocked on pure-side narrower preferring relation::map over collection::map for Relation-typed receiver"]
 #[test]
 fn pct_sort_testSimpleSortShared() {
     run_pct_test("meta::pure::functions::relation::tests::sort::testSimpleSortShared");
 }
 
-#[ignore = "uses $res->map(x|$x.col), same narrowing gap as pct_sort_testSimpleSortShared"]
 #[test]
 fn pct_sort_testSimpleSort_MultipleExpressions() {
     run_pct_test(
@@ -352,18 +345,6 @@ fn pct_select_testMultiColsSelect_MultipleExpressions() {
     );
 }
 
-/// `~'other kind'` — quoted column name carrying special chars (the
-/// space in this case). Runtime fails with
-/// `select: column ''other kind'' not present in receiver;
-///  have ["val", "str", "other kind"]` — the looked-up name carries
-/// the surrounding quotes (`'other kind'`) while the TDS column was
-/// parsed without them (`other kind`).
-///
-/// The mismatch lives in the ColSpec literal lower: `~'name'` should
-/// strip surrounding `'` to materialise just `name` as the `name`
-/// slot. Header-parsing for the TDS literal does this correctly
-/// (column appears as `other kind`); the ColSpec lower doesn't.
-#[ignore = "pure-side: ColSpec lower for ~'name' should strip surrounding quotes from the name slot"]
 #[test]
 fn pct_select_testSingleSelectWithQuotedColumn() {
     run_pct_test(
@@ -371,7 +352,6 @@ fn pct_select_testSingleSelectWithQuotedColumn() {
     );
 }
 
-#[ignore = "same quoted-name lowering gap as pct_select_testSingleSelectWithQuotedColumn"]
 #[test]
 fn pct_select_testSingleSelectWithQuotedColumn_MultipleExpressions() {
     run_pct_test(
@@ -481,6 +461,76 @@ fn pct_size_testComparisonOperationAfterSize() {
 fn pct_size_testComparisonOperationAfterSize_MultipleExpressions() {
     run_pct_test(
         "meta::pure::functions::relation::tests::size::testComparisonOperationAfterSize_MultipleExpressions",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// PCT tests — `composition` (multi-native compositions in tests/composition.pure)
+// Limited to tests whose body only uses natives we've implemented:
+// filter, sort, distinct, extend, rename, select, limit, drop,
+// concatenate, columns, size, ascending/descending, map, toString.
+// Tests touching groupBy, project, pivot, join, asofjoin, lateral,
+// window/olap, variant are not included.
+// ---------------------------------------------------------------------------
+
+/// Same `String + Numeric->toString()` chain reduction gap as
+/// `pct_extend_testSimpleExtendStrShared`. Lambda body
+/// `$x.str->toOne() + $x.val->toOne()->toString()` reaches plus
+/// with `String + Integer` instead of `String + String`.
+#[ignore = "pure-side: $c.val->toOne()->toString() chain doesn't reduce to String before plus dispatch"]
+#[test]
+fn pct_composition_testExtendFilter() {
+    run_pct_test("meta::pure::functions::relation::tests::composition::testExtendFilter");
+}
+
+#[test]
+fn pct_composition_test_Distinct_Filter() {
+    run_pct_test("meta::pure::functions::relation::tests::composition::test_Distinct_Filter");
+}
+
+#[test]
+fn pct_composition_testMixColumnNamesRenameFilter() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::composition::testMixColumnNamesRenameFilter",
+    );
+}
+
+/// Same `String + Numeric->toString()` chain reduction gap as
+/// `pct_extend_testSimpleExtendStrShared`. The lambda body
+/// concatenates `Integer->toString() + String->toString() +
+/// Integer->toString()` and trips the plus dispatcher.
+#[ignore = "pure-side: $c.col->toOne()->toString() chain doesn't reduce to String before plus dispatch"]
+#[test]
+fn pct_composition_testMixColumnNamesRenameExtend() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::composition::testMixColumnNamesRenameExtend",
+    );
+}
+
+/// Uses the OLAP window-extend overload
+/// `extend(Relation, _Window<T>, FuncColSpec<...>)` — a 3-arg
+/// variant we haven't implemented. Our `ExtendFuncColSpec` rejects
+/// with `expected 2 argument(s), got 3`. Needs `over(~col)` /
+/// `_Window` runtime + the 3-arg extend native.
+#[ignore = "engine-side: OLAP `extend(Relation, _Window, FuncColSpec)` overload not yet implemented"]
+#[test]
+fn pct_composition_testExtendFilterOutNull() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::composition::testExtendFilterOutNull",
+    );
+}
+
+#[ignore = "engine-side: OLAP `extend(Relation, _Window, FuncColSpec)` overload not yet implemented"]
+#[test]
+fn pct_composition_testExtendAddOnNull() {
+    run_pct_test("meta::pure::functions::relation::tests::composition::testExtendAddOnNull");
+}
+
+#[ignore = "engine-side: OLAP `extend(Relation, _Window, FuncColSpec)` overload not yet implemented"]
+#[test]
+fn pct_composition_testExtendJoinStringOnNull() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::composition::testExtendJoinStringOnNull",
     );
 }
 
