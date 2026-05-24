@@ -1,0 +1,143 @@
+repo	status	files	errors	top_error
+platform_dsl_diagram	OK	1	0	-
+platform_dsl_graph	OK	2	0	-
+platform_dsl_mapping	OK	6	0	-
+platform_dsl_path	OK	1	0	-
+platform_dsl_store	OK	2	0	-
+platform_dsl_tds	OK	1	0	-
+platform_precise_primitives	OK	1	0	-
+platform_store_relational	OK	9	0	-
+core	NO_SUMMARY	0	0	-
+core_analytics_binding	OK	1	0	-
+core_analytics_class	OK	2	0	-
+core_analytics_function	OK	1	0	-
+core_analytics_lineage	FAIL	12	18	Unexpected token Mapping
+core_analytics_mapping	FAIL	6	4	Unexpected token Database
+core_analytics_quality	FAIL	13	8	Expected expression, found ':'
+core_analytics_search	FAIL	4	5	Unexpected token Diagram
+core_analytics_test_coverage	FAIL	3	2	Unexpected token Mapping
+core_authentication	FAIL	77	1	Unexpected token Diagram
+core_bigqueryfunction	OK	1	0	-
+core_compiler_test	OK	1	0	-
+core_configuration	OK	1	0	-
+core_data_space	OK	1	0	-
+core_data_space_metamodel	FAIL	4	1	Unexpected token Diagram
+core_dataquality	FAIL	9	8	Expected island grammar for tag 'TDS', found identifier
+core_dataquality_test	FAIL	8	70	Expected island grammar for tag '>', found '{'
+core_deephaven_execution_test	OK	1	0	-
+core_deephaven_java_platform_binding	OK	2	0	-
+core_deephaven_pct	OK	1	0	-
+core_deephaven_pure	OK	13	0	-
+core_diagram	OK	3	0	-
+core_diagram_metamodel	FAIL	2	1	Unexpected token Diagram
+core_elasticsearch_execution_test	OK	30	0	-
+core_elasticsearch_seven_metamodel	FAIL	15	4	Expected expression, found ':'
+core_elasticsearch_specification_metamodel	FAIL	3	2	Expected expression, found ':'
+core_external_compiler	OK	1	0	-
+core_external_execution	OK	1	0	-
+core_external_extensions	OK	2	0	-
+core_external_format_arrow	OK	2	0	-
+core_external_format_avro	FAIL	28	10	Unexpected token Diagram
+core_external_format_flatdata	FAIL	13	3	Unexpected token Mapping
+core_external_format_flatdata_java_platform_binding	NO_SUMMARY	0	0	-
+core_external_format_json	NO_SUMMARY	0	0	-
+core_external_format_json_java_platform_binding	OK	6	0	-
+core_external_format_openapi	FAIL	7	58	Unexpected token Diagram
+core_external_format_powerbi	FAIL	6	1	Unexpected token Diagram
+core_external_format_protobuf	FAIL	20	2	Unexpected token Diagram
+core_external_format_rosetta	OK	6	0	-
+core_external_format_xml	FAIL	13	7	Unexpected token Mapping
+core_external_format_xml_java_platform_binding	OK	5	0	-
+core_external_language_daml	OK	7	0	-
+core_external_language_haskell	FAIL	8	1	Unexpected token Diagram
+core_external_language_java	NO_SUMMARY	0	0	-
+core_external_language_java_compiler	OK	1	0	-
+core_external_language_java_conventions_essential	OK	16	0	-
+core_external_language_java_conventions_standard	OK	3	0	-
+core_external_language_java_feature_based_generation	NO_SUMMARY	0	0	-
+core_external_language_morphir	NO_SUMMARY	0	0	-
+core_external_python_execution	OK	1	0	-
+core_external_python_reverse_pct_legend_ql	OK	3	0	-
+core_external_python_reverse_pct_pandas_api	OK	3	0	-
+core_external_python_reverse_pct_shared	OK	14	0	-
+core_external_query_graphql	OK	45	0	-
+core_external_query_graphql_metamodel	FAIL	4	2	Unexpected token Diagram
+core_external_query_relationalai	FAIL	50	23	Expected identifier, found '|'
+core_external_query_sql	FAIL	18	14	Expected '>', found '|'
+core_external_query_sql_expression	OK	2	0	-
+core_external_query_sql_expression_tests	OK	1	0	-
+core_external_query_sql_reverse_pct	OK	134	0	-
+core_external_store_relational_postgres_sql_model	OK	2	0	-
+core_external_store_relational_postgres_sql_model_extensions	OK	1	0	-
+core_external_store_relational_postgres_sql_parser	OK	1	0	-
+core_external_store_relational_sdt	OK	9	0	-
+core_external_store_relational_sql_dialect_translation	OK	114	0	-
+core_external_store_relational_sql_dialect_translation_duckdb	OK	2	0	-
+core_external_store_relational_sql_dialect_translation_h2	OK	2	0	-
+core_external_store_relational_sql_dialect_translation_memsql	OK	1	0	-
+core_external_store_relational_sql_dialect_translation_snowflake	OK	2	0	-
+core_external_store_relational_sql_planning	OK	8	0	-
+core_external_tableformat_iceberg	OK	1	0	-
+core_external_test_connection	FAIL	3	1	Expected island grammar for tag 'TDS', found identifier
+core_function_activator	OK	2	0	-
+core_functionjar	OK	2	0	-
+core_functions_json	OK	1	0	-
+core_functions_relation	FAIL	49	344	Expected island grammar for tag 'TDS', found identifier
+core_functions_standard	FAIL	54	73	Expected island grammar for tag 'TDS', found identifier
+core_functions_unclassified	OK	67	0	-
+core_functions_variant	OK	7	0	-
+core_generation	OK	18	0	-
+core_hostedservice	FAIL	4	12	Unexpected token Mapping
+core_java_platform_binding	NO_SUMMARY	0	0	-
+core_java_platform_binding_external_format	OK	5	0	-
+core_memsqlfunction	OK	2	0	-
+core_mongodb_execution_test	OK	4	0	-
+core_nonrelational_mongodb	FAIL	26	2	Unexpected token Diagram
+core_nonrelational_mongodb_java_platform_binding	OK	1	0	-
+core_persistence	FAIL	13	6	Unexpected token Diagram
+core_persistence_cloud	FAIL	2	1	Unexpected token Diagram
+core_persistence_relational	OK	1	0	-
+core_protocol_generation	NO_SUMMARY	0	0	-
+core_pure_changetoken	FAIL	26	1	Unexpected token Diagram
+core_pure_changetoken_test	OK	47	0	-
+core_relational	NO_SUMMARY	0	0	-
+core_relational_athena	OK	6	0	-
+core_relational_aurora	OK	7	0	-
+core_relational_bigquery	OK	31	0	-
+core_relational_clickhouse	OK	4	0	-
+core_relational_clickhouse_pct	OK	1	0	-
+core_relational_databricks	OK	32	0	-
+core_relational_duckdb	OK	11	0	-
+core_relational_duckdb_pct	OK	1	0	-
+core_relational_h2_pct	OK	2	0	-
+core_relational_hive	OK	3	0	-
+core_relational_java_platform_binding	NO_SUMMARY	0	0	-
+core_relational_memsql	FAIL	12	2	Unexpected token Database
+core_relational_mft	OK	1	0	-
+core_relational_oracle	OK	6	0	-
+core_relational_oracle_pct	OK	1	0	-
+core_relational_postgres	OK	12	0	-
+core_relational_postgres_pct	OK	1	0	-
+core_relational_presto	OK	9	0	-
+core_relational_redshift	OK	27	0	-
+core_relational_snowflake	FAIL	47	4	Unexpected token Database
+core_relational_snowflake_pct	OK	2	0	-
+core_relational_spanner	OK	16	0	-
+core_relational_sparksql	OK	3	0	-
+core_relational_sqlserver	OK	2	0	-
+core_relational_store_entitlement	OK	2	0	-
+core_relational_sybase	OK	8	0	-
+core_relational_sybaseiq	OK	16	0	-
+core_relational_test	FAIL	2	1	Unexpected token Database
+core_relational_trino	OK	10	0	-
+core_relational_trino_pct	OK	1	0	-
+core_reverse_pct	OK	2	0	-
+core_scenario_quant	FAIL	8	6	Expected island grammar for tag 'TDS', found identifier
+core_service	FAIL	5	1	Unexpected token Diagram
+core_servicestore	FAIL	115	6	Unexpected token Diagram
+core_servicestore_java_platform_binding	OK	3	0	-
+core_snowflake	FAIL	8	21	Unexpected token Mapping
+core_snowflake_test	FAIL	3	14	Unexpected token Mapping
+core_text_metamodel	OK	1	0	-
+pure_ide	OK	4	0	-
+pure_ide_debug	OK	1	0	-
