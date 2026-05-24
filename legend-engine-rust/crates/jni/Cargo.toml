@@ -1,0 +1,37 @@
+# Copyright 2026 Goldman Sachs
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[package]
+name        = "legend-engine-rust-jni"
+description = "Engine-flavoured JNI cdylib — re-exports `legend-pure-parser-jni`'s `Java_*` entry points with engine RuntimeExtension crates force-linked so Java callers loading `liblegend_engine_jni` see the engine's natives."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "legend_engine_jni"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Upstream JNI rlib — provides the actual `Java_*` implementations
+# (NativeRegistry::discovered() etc.). The forwarders in src/lib.rs
+# delegate to these.
+legend-pure-parser-jni = { workspace = true }
+jni                    = { workspace = true }
+
+# Engine extensions — same set as crates/cli, same rationale (link
+# forcing so #[distributed_slice] statics reach the cdylib export).
+legend-engine-rust-natives-functions-relation     = { path = "../natives-functions-relation" }
+legend-engine-rust-natives-functions-unclassified = { path = "../natives-functions-unclassified" }

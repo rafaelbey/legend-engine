@@ -22,6 +22,7 @@ members = [
     "crates/core-functions-unclassified-pure",
     "crates/core-functions-variant-pure",
     "crates/integration-smoke",
+    "crates/jni",
     "crates/natives-functions-relation",
     "crates/natives-functions-unclassified",
     "crates/xtask",
@@ -42,10 +43,12 @@ legend-pure-parser-pure   = { path = "../../legend-pure/legend-pure-rust/crates/
 legend-pure-runtime       = { path = "../../legend-pure/legend-pure-rust/crates/runtime" }
 legend-pure-dsl-tds       = { path = "../../legend-pure/legend-pure-rust/crates/dsl-tds" }
 legend-cli                = { path = "../../legend-pure/legend-pure-rust/crates/cli" }
+legend-pure-parser-jni    = { path = "../../legend-pure/legend-pure-rust/crates/jni" }
 
 # Standard
 smol_str = "0.3"
 linkme   = "0.3"
+jni      = "0.21"
 
 [profile.dev]
 split-debuginfo = "unpacked"
