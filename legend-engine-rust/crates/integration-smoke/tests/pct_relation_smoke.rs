@@ -569,3 +569,126 @@ fn pct_composition_testExtendJoinStringOnNull() {
 fn pct_eval_testSimpleEval() {
     run_pct_test("meta::pure::functions::relation::tests::eval::testSimpleEval");
 }
+
+// ---------------------------------------------------------------------------
+// PCT tests — OLAP `over(_, sortInfo, frame)` with extend(_,_Window,AggColSpec).
+//
+// Each test uses `extend(over(~p, [~o,~i], rows(M, N)), ~newCol:{...}:y|$y->plus())`,
+// then string-compares the result via `assertEquals(expected_string,
+// $res->sort(...)->toString())`. The assertion path is pure-string —
+// no `columns().classifierGenericType` reflection, no `assertTdsEquivalent`,
+// so neither the find_by_prefix collision nor the Column-reflection
+// gap blocks these.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_over_testRows_UnboundedPreceding_CurrentRow() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_UnboundedPreceding_CurrentRow",
+    );
+}
+
+#[test]
+fn pct_over_testRows_CurrentRow_UnboundedFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_CurrentRow_UnboundedFollowing",
+    );
+}
+
+#[test]
+fn pct_over_testRows_UnboundedPreceding_UnboundedFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_UnboundedPreceding_UnboundedFollowing",
+    );
+}
+
+#[test]
+fn pct_over_testRows_NPreceding_NPreceding() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_NPreceding_NPreceding",
+    );
+}
+
+#[test]
+fn pct_over_testRows_NPreceding_NFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_NPreceding_NFollowing",
+    );
+}
+
+#[test]
+fn pct_over_testRows_NFollowing_NFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_NFollowing_NFollowing",
+    );
+}
+
+#[test]
+fn pct_over_testRows_UnboundedPreceding_NPreceding() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_UnboundedPreceding_NPreceding",
+    );
+}
+
+#[test]
+fn pct_over_testRows_UnboundedPreceding_NFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_UnboundedPreceding_NFollowing",
+    );
+}
+
+#[test]
+fn pct_over_testRows_NPreceding_UnboundedFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_NPreceding_UnboundedFollowing",
+    );
+}
+
+#[test]
+fn pct_over_testRows_NFollowing_UnboundedFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_NFollowing_UnboundedFollowing",
+    );
+}
+
+#[test]
+fn pct_over_testRows_CurrentRow_CurrentRow() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_CurrentRow_CurrentRow",
+    );
+}
+
+#[test]
+fn pct_over_testRows_NPreceding_CurrentRow() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_NPreceding_CurrentRow",
+    );
+}
+
+#[test]
+fn pct_over_testRows_CurrentRow_NFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_CurrentRow_NFollowing",
+    );
+}
+
+#[test]
+fn pct_over_testRows_UnboundedPreceding_UnboundedFollowing_WithSinglePartition_WithoutOrderBy() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_UnboundedPreceding_UnboundedFollowing_WithSinglePartition_WithoutOrderBy",
+    );
+}
+
+#[test]
+fn pct_over_testRows_UnboundedPreceding_UnboundedFollowing_WithMultiplePartitions_WithoutOrderBy() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_UnboundedPreceding_UnboundedFollowing_WithMultiplePartitions_WithoutOrderBy",
+    );
+}
+
+#[test]
+fn pct_over_testRows_UnboundedPreceding_CurrentRow_WithMultiplePartitions_WithSingleOrderBy() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRows_UnboundedPreceding_CurrentRow_WithMultiplePartitions_WithSingleOrderBy",
+    );
+}

@@ -61,12 +61,14 @@ mod extend_olap;
 mod filter;
 mod limit;
 mod map;
+mod reduce;
 mod rename;
 mod select;
 mod size;
 mod sort;
 mod sort_info;
 mod tostring;
+mod window_runtime;
 
 pub use ascending::Ascending;
 pub use columns::Columns;
@@ -75,10 +77,11 @@ pub use descending::Descending;
 pub use distinct::{Distinct, DistinctColSpecArray};
 pub use drop::Drop;
 pub use extend::{ExtendFuncColSpec, ExtendFuncColSpecArray};
-pub use extend_olap::ExtendWindowAggColSpec;
+pub use extend_olap::{ExtendWindowAggColSpec, ExtendWindowFuncColSpec};
 pub use filter::Filter;
 pub use limit::Limit;
 pub use map::MapRelation;
+pub use reduce::Reduce;
 pub use rename::Rename;
 pub use select::{SelectAll, SelectColSpec, SelectColSpecArray};
 pub use size::Size;
@@ -134,8 +137,16 @@ impl RuntimeExtension for RelationFunctionsExtension {
             ExtendFuncColSpecArray,
         );
         registry.register(
+            "extend_Relation_1___Window_1__FuncColSpec_1__Relation_1_",
+            ExtendWindowFuncColSpec,
+        );
+        registry.register(
             "extend_Relation_1___Window_1__AggColSpec_1__Relation_1_",
             ExtendWindowAggColSpec,
+        );
+        registry.register(
+            "reduce_Relation_1___Window_1__T_1__Function_1__Function_1__U_m_",
+            Reduce,
         );
         registry.register("limit_Relation_1__Integer_1__Relation_1_", Limit);
         registry.register("drop_Relation_1__Integer_1__Relation_1_", Drop);

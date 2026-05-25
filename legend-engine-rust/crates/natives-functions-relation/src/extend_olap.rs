@@ -50,6 +50,11 @@ use legend_pure_runtime::native::relation::shared::{
 };
 use legend_pure_runtime::value::Value;
 
+use crate::window_runtime::{
+    frame_row_indices, partition_row_indices, read_frame, read_partition_cols, read_sort_keys,
+    resolve_partition_indices, resolve_sort_indices, sort_partitions_in_place,
+};
+
 /// `extend(Relation, _Window, AggColSpec)`.
 #[derive(Debug)]
 pub struct ExtendWindowAggColSpec;
@@ -68,40 +73,23 @@ impl NativeFunction for ExtendWindowAggColSpec {
         let tds_obj = unwrap_instance_value(&rel_value, instance_value_id, ctx)?;
         let parsed = read_parsed_tds("extend", &tds_obj, ctx)?;
 
-        // -- Window: partition column names ------------------------------
+        // -- Window: partition + sortInfo + frame ------------------------
         let window_value = ctx.evaluate(&args[1])?.into_value();
         let window_obj = unwrap_instance_value(&window_value, instance_value_id, ctx)?;
-        let partition_values = ctx
-            .heap()
-            .get_property_values(&window_obj, "partition")
-            .map_err(PureException::from)?;
-        let partition_cols: Vec<SmolStr> = partition_values
-            .iter()
-            .filter_map(|v| match v {
-                Value::String(s) => Some(s.clone()),
-                _ => None,
-            })
-            .collect();
+        let partition_cols = read_partition_cols(&window_obj, ctx)?;
+        let sort_keys = read_sort_keys(&window_obj, ctx)?;
+        let frame = read_frame(&window_obj, ctx)?;
 
-        // Resolve partition column names to their indices in the source
-        // TDS so partition-key tuples are cheap to assemble per row.
-        let partition_indices: Vec<usize> = partition_cols
-            .iter()
-            .map(|name| {
-                parsed
-                    .columns
-                    .iter()
-                    .position(|c| c.name.as_str() == name.as_str())
-                    .ok_or_else(|| {
-                        let available: Vec<&str> =
-                            parsed.columns.iter().map(|c| c.name.as_str()).collect();
-                        PureException::from(PureRuntimeError::EvaluationError(format!(
-                            "extend (Relation, _Window, AggColSpec): partition column \
-                             '{name}' not present in receiver; have {available:?}"
-                        )))
-                    })
-            })
-            .collect::<Result<_, _>>()?;
+        let partition_indices = resolve_partition_indices(
+            &partition_cols,
+            &parsed,
+            "extend (Relation, _Window, AggColSpec)",
+        )?;
+        let sort_indices = resolve_sort_indices(
+            &sort_keys,
+            &parsed,
+            "extend (Relation, _Window, AggColSpec)",
+        )?;
 
         // -- AggColSpec: name + map + reduce -----------------------------
         let acs_value = ctx.evaluate(&args[2])?.into_value();
@@ -134,17 +122,12 @@ impl NativeFunction for ExtendWindowAggColSpec {
         let rel_arg = Value::Object(tds_obj.clone());
         let window_arg = Value::Object(window_obj.clone());
 
-        // -- Per-row map: assemble partition key + compute K value ------
-        //    Partition-key tuple uses Debug repr of each cell — String /
-        //    Integer / Float / Boolean / Date / None all formatted
-        //    uniquely. Same partition-key shape we use for distinct
-        //    dedup (linear equality over Option<TypedCell>).
-        let mut partition_keys: Vec<Vec<Option<TypedCell>>> = Vec::with_capacity(parsed.rows.len());
+        // -- Per-row map: compute K once per source row. Map is invariant
+        //    of window position (it operates on the row, not the frame),
+        //    so we can compute every row's K value upfront and slice
+        //    these by frame indices in the reduce step.
         let mut map_values: Vec<Value> = Vec::with_capacity(parsed.rows.len());
         for row in &parsed.rows {
-            let key: Vec<Option<TypedCell>> =
-                partition_indices.iter().map(|&i| row[i].clone()).collect();
-            partition_keys.push(key);
             let row_tuple = build_row_tuple(&parsed.columns, row, ctx)?;
             let k = ctx.call_function(
                 &map_fn,
@@ -153,29 +136,26 @@ impl NativeFunction for ExtendWindowAggColSpec {
             map_values.push(k);
         }
 
-        // -- Per-partition group: collect K values per unique partition --
-        //    Quadratic on row count (linear scan to find the matching
-        //    partition group). Fine for current PCT sizes; switch to a
-        //    hash-keyed group when a workload needs it.
-        let mut partition_groups: Vec<(Vec<Option<TypedCell>>, PVector<Value>)> = Vec::new();
-        for (key, kval) in partition_keys.iter().zip(map_values.iter()) {
-            if let Some(slot) = partition_groups
-                .iter_mut()
-                .find(|(k, _)| k == key)
-                .map(|(_, vs)| vs)
-            {
-                push_flat(slot, kval);
-            } else {
-                let mut vs: PVector<Value> = PVector::new();
-                push_flat(&mut vs, kval);
-                partition_groups.push((key.clone(), vs));
+        // -- Partition + sort + per-row position --------------------------
+        // Group row indices by partition key (preserves source order
+        // within each group), then stable-sort each group by sortInfo.
+        // After this, partitions[i].1[j] = source-row index at sorted
+        // position j of partition i.
+        let mut partitions = partition_row_indices(&parsed, &partition_indices);
+        sort_partitions_in_place(&mut partitions, &parsed, &sort_indices);
+
+        // Reverse-index: source-row index -> (partition idx, position-in-partition).
+        let mut row_position: Vec<(usize, usize)> = vec![(0, 0); parsed.rows.len()];
+        for (p_idx, (_, indices)) in partitions.iter().enumerate() {
+            for (pos, &src) in indices.iter().enumerate() {
+                row_position[src] = (p_idx, pos);
             }
         }
 
-        // -- Per-row reduce: each row gets the V from its partition -----
+        // -- Per-row reduce: each row gets V from its frame's K values --
         //
-        // Empty-partition (no non-null map results) -> emit `None`
-        // without calling reduce. Mirrors Java
+        // Empty-frame (no non-null map results) -> emit `None` without
+        // calling reduce. Mirrors Java
         // `AggregationShared.processAggregation`: when the per-row
         // aggregation collection is empty (e.g. every map output was
         // dropped as Unit by push_flat), the setter is given `null`
@@ -184,24 +164,21 @@ impl NativeFunction for ExtendWindowAggColSpec {
         // (e.g. `plus()` of nothing -> 0, `joinStrings()` of nothing
         // -> ""). The PCT corpus expects null in both cases.
         let mut new_cells: Vec<Option<TypedCell>> = Vec::with_capacity(parsed.rows.len());
-        for key in &partition_keys {
-            let collection = partition_groups
-                .iter()
-                .find(|(k, _)| k == key)
-                .map(|(_, vs)| vs.clone())
-                .unwrap_or_default();
+        for src_idx in 0..parsed.rows.len() {
+            let (p_idx, position) = row_position[src_idx];
+            let partition_indices_sorted = &partitions[p_idx].1;
+            let in_frame = frame_row_indices(partition_indices_sorted, position, frame.as_ref());
+
+            let mut collection: PVector<Value> = PVector::new();
+            for &i in &in_frame {
+                push_flat(&mut collection, &map_values[i]);
+            }
             if collection.is_empty() {
                 new_cells.push(None);
                 continue;
             }
-            // Reduce lambda is `K[*]->V[0..1]`. Pass a Collection
-            // (or scalar for the degenerate 1-element case).
             let collection_arg = if collection.len() == 1 {
-                collection
-                    .iter()
-                    .next()
-                    .cloned()
-                    .unwrap_or(Value::Unit)
+                collection.iter().next().cloned().unwrap_or(Value::Unit)
             } else {
                 Value::Collection(Box::new(collection))
             };
@@ -210,6 +187,95 @@ impl NativeFunction for ExtendWindowAggColSpec {
         }
 
         // -- New column metadata + extended rows -------------------------
+        let (inferred_type, inferred_mult) = infer_column_type_and_mult(&new_cells);
+        let mut new_columns = parsed.columns.clone();
+        new_columns.push(ParsedColumn {
+            name: new_col_name,
+            type_tag: inferred_type,
+            multiplicity: inferred_mult,
+        });
+        let mut new_rows: Vec<Vec<Option<TypedCell>>> = Vec::with_capacity(parsed.rows.len());
+        for (row, new_cell) in parsed.rows.iter().zip(new_cells.into_iter()) {
+            let mut extended = row.clone();
+            extended.push(new_cell);
+            new_rows.push(extended);
+        }
+
+        let new_csv = render_csv_from_columns_and_rows(&new_columns, &new_rows);
+        let new_tds = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
+        ctx.heap_mut()
+            .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
+            .map_err(PureException::from)?;
+        Ok(Evaluated::new(Value::Object(new_tds)))
+    }
+}
+
+/// `extend<T,V,Z>(r:Relation<T>[1], w:_Window<T>[1],
+///     fcs:FuncColSpec<{Relation<T>[1],_Window<T>[1],T[1]->V[*]},Z>[1]
+/// ):Relation<T+Z>[1]`.
+///
+/// Per-row dispatch: the FuncColSpec lambda receives `(rel, window,
+/// row_tuple)` and returns a value the new column will carry. Unlike
+/// the AggColSpec variant, there is no reduce step — the lambda body
+/// is responsible for any aggregation it wants (e.g. by calling the
+/// standalone `reduce` native, which is the canonical reduce.pure PCT
+/// shape).
+#[derive(Debug)]
+pub struct ExtendWindowFuncColSpec;
+
+impl NativeFunction for ExtendWindowFuncColSpec {
+    fn execute(
+        &self,
+        args: &[ValueSpec],
+        ctx: &mut dyn EvalContextTrait,
+    ) -> Result<Evaluated, PureException> {
+        expect_args("extend (Relation, _Window, FuncColSpec)", args, 3)?;
+        let instance_value_id = m3_paths::resolve(ctx.model(), m3_paths::INSTANCE_VALUE);
+
+        // -- Source TDS --------------------------------------------------
+        let rel_value = ctx.evaluate(&args[0])?.into_value();
+        let tds_obj = unwrap_instance_value(&rel_value, instance_value_id, ctx)?;
+        let parsed = read_parsed_tds("extend", &tds_obj, ctx)?;
+
+        // -- Window: kept opaque; FuncColSpec dispatch is per-row -------
+        let window_value = ctx.evaluate(&args[1])?.into_value();
+        let window_obj = unwrap_instance_value(&window_value, instance_value_id, ctx)?;
+
+        // -- FuncColSpec: name + function -------------------------------
+        let fcs_value = ctx.evaluate(&args[2])?.into_value();
+        let fcs_obj = unwrap_instance_value(&fcs_value, instance_value_id, ctx)?;
+        let name_values = ctx
+            .heap()
+            .get_property_values(&fcs_obj, "name")
+            .map_err(PureException::from)?;
+        let new_col_name: SmolStr = name_values
+            .iter()
+            .find_map(|v| match v {
+                Value::String(s) => Some(s.clone()),
+                _ => None,
+            })
+            .ok_or_else(|| {
+                PureException::from(PureRuntimeError::EvaluationError(
+                    "extend (Relation, _Window, FuncColSpec): FuncColSpec.name slot missing"
+                        .into(),
+                ))
+            })?;
+        let function_value = read_function_slot(&fcs_obj, "function", ctx, "FuncColSpec.function")?;
+
+        let rel_arg = Value::Object(tds_obj.clone());
+        let window_arg = Value::Object(window_obj.clone());
+
+        // -- Per-row evaluation -----------------------------------------
+        let mut new_cells: Vec<Option<TypedCell>> = Vec::with_capacity(parsed.rows.len());
+        for row in &parsed.rows {
+            let row_tuple = build_row_tuple(&parsed.columns, row, ctx)?;
+            let val = ctx.call_function(
+                &function_value,
+                &[rel_arg.clone(), window_arg.clone(), Value::Object(row_tuple)],
+            )?;
+            new_cells.push(value_to_typed_cell(&val));
+        }
+
         let (inferred_type, inferred_mult) = infer_column_type_and_mult(&new_cells);
         let mut new_columns = parsed.columns.clone();
         new_columns.push(ParsedColumn {
