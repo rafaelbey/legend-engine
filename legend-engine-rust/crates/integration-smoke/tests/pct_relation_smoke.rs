@@ -384,13 +384,11 @@ fn pct_select_testSelectAll_MultipleExpressions() {
 /// so the issue is specific to the `String + Numeric->toString()`
 /// chain at the lambda body lowering / operator-precedence layer
 /// (pure-side).
-#[ignore = "pure-side: $c.val->toOne()->toString() chain doesn't reduce to String before plus dispatch"]
 #[test]
 fn pct_extend_testSimpleExtendStrShared() {
     run_pct_test("meta::pure::functions::relation::tests::extend::testSimpleExtendStrShared");
 }
 
-#[ignore = "same chain-to-String issue as pct_extend_testSimpleExtendStrShared"]
 #[test]
 fn pct_extend_testSimpleExtendStr_MultipleExpressions() {
     run_pct_test(
@@ -473,11 +471,11 @@ fn pct_size_testComparisonOperationAfterSize_MultipleExpressions() {
 // window/olap, variant are not included.
 // ---------------------------------------------------------------------------
 
-/// Same `String + Numeric->toString()` chain reduction gap as
-/// `pct_extend_testSimpleExtendStrShared`. Lambda body
-/// `$x.str->toOne() + $x.val->toOne()->toString()` reaches plus
-/// with `String + Integer` instead of `String + String`.
-#[ignore = "pure-side: $c.val->toOne()->toString() chain doesn't reduce to String before plus dispatch"]
+/// Lambda body `$x.str->toOne() + $x.val->toOne()->toString()` inside an
+/// `extend(~newCol:x|…)`, then `filter(x|$x.newCol == …)`. The FuncColSpec
+/// init lambda's row param `$x` is now typed from the source relation, so
+/// `$x.val` resolves to its column type and `toString` dispatches on the
+/// scalar (not the `Relation` overload).
 #[test]
 fn pct_composition_testExtendFilter() {
     run_pct_test("meta::pure::functions::relation::tests::composition::testExtendFilter");
@@ -495,11 +493,15 @@ fn pct_composition_testMixColumnNamesRenameFilter() {
     );
 }
 
-/// Same `String + Numeric->toString()` chain reduction gap as
-/// `pct_extend_testSimpleExtendStrShared`. The lambda body
-/// concatenates `Integer->toString() + String->toString() +
-/// Integer->toString()` and trips the plus dispatcher.
-#[ignore = "pure-side: $c.col->toOne()->toString() chain doesn't reduce to String before plus dispatch"]
+/// `#TDS->rename(~a,~b)->…->extend(~newCol:c|$c.<renamed>->toOne()->toString() + …)`.
+/// The ColSpec init-lambda row typing is fixed, but the extend's *source* is a
+/// `rename` chain whose compile-time return type does not carry the renamed
+/// columns: `rename<T,Z,K,V>(…):Relation<T-Z+V>` needs type-level relation
+/// arithmetic (the `?`-wildcard `K`/`V` binding + `AlgebraUnion` subtraction)
+/// that isn't computed yet, so `$c.<renamed>` doesn't resolve to its column
+/// type. Distinct from the ColSpec-lambda fix — tracked as the `rename`
+/// type-arithmetic follow-up.
+#[ignore = "pure-side: rename's Relation<T-Z+V> return type doesn't carry renamed columns (separate from the ColSpec init-lambda fix)"]
 #[test]
 fn pct_composition_testMixColumnNamesRenameExtend() {
     run_pct_test(
