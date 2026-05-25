@@ -1,0 +1,16 @@
+name: simple-class
+title: "Single trivial Pure class"
+description: |
+  Minimal EMIT model used to validate the Rust parity harness end to
+  end without pulling in any store/runtime extensions. One class with
+  two primitive properties — a workload both engines must handle.
+
+modelSources:
+  model:
+    root: simple-class
+    files:
+      - domain/Person.pure
+
+features:
+  - class
+complexity: trivial

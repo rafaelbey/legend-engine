@@ -30,5 +30,6 @@
     <modules>
         <module>legend-engine-emit</module>
         <module>legend-engine-emit-junit</module>
+        <module>legend-engine-emit-rust</module>
     </modules>
 </project>
