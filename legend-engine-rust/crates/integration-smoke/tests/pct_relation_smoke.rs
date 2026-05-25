@@ -495,13 +495,19 @@ fn pct_composition_testMixColumnNamesRenameFilter() {
 
 /// `#TDS->rename(~a,~b)->…->extend(~newCol:c|$c.<renamed>->toOne()->toString() + …)`.
 /// The ColSpec init-lambda row typing is fixed, but the extend's *source* is a
-/// `rename` chain whose compile-time return type does not carry the renamed
-/// columns: `rename<T,Z,K,V>(…):Relation<T-Z+V>` needs type-level relation
-/// arithmetic (the `?`-wildcard `K`/`V` binding + `AlgebraUnion` subtraction)
-/// that isn't computed yet, so `$c.<renamed>` doesn't resolve to its column
-/// type. Distinct from the ColSpec-lambda fix — tracked as the `rename`
-/// type-arithmetic follow-up.
-#[ignore = "pure-side: rename's Relation<T-Z+V> return type doesn't carry renamed columns (separate from the ColSpec init-lambda fix)"]
+/// Chained `rename`→`extend`→`rename`→`filter`→`rename`→`select`. The
+/// `rename<T,Z,K,V>(…):Relation<T-Z+V>` type-algebra now resolves (the
+/// `(?:K)⊆T` / `Z=…` wildcard binding + `T-Z+V` Union/Difference collapse are
+/// implemented), so the three column renames and the first `extend` lambda
+/// (`$c.col_one_num->toOne()->toString()`) type-check and run. The remaining
+/// blocker is `extend`'s OWN `Relation<T+Z>`: the `FuncColSpec<{T->Any},Z>`
+/// arg doesn't surface its output column `Z` (the new `newCol`, typed by the
+/// init lambda's return type), so `T+Z` stays generic and the *next*
+/// `rename(~newCol,~_new_col)` can't resolve `_new_col`'s type — `$x._new_col
+/// ->toString()` then mis-dispatches to `toString_Relation`. Tracked as the
+/// extend `T+Z` FuncColSpec-output-column follow-up (distinct from rename;
+/// pass-order-sensitive — the lambda return type isn't known at lowering).
+#[ignore = "pure-side: extend's Relation<T+Z> doesn't surface the FuncColSpec output column (rename's T-Z+V now works; this is the separate extend T+Z follow-up)"]
 #[test]
 fn pct_composition_testMixColumnNamesRenameExtend() {
     run_pct_test(
