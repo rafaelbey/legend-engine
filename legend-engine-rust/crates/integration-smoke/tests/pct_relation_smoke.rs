@@ -508,16 +508,14 @@ fn pct_composition_testMixColumnNamesRenameExtend() {
     );
 }
 
-/// Uses `extend(over(~p), ~newCol:{p,w,r|...}:y|$y->plus())` — the
-/// OLAP `extend(Relation, _Window, AggColSpec)` overload. The native
-/// works (see `olap_extend_smoke.rs` for no-null reproducers). This
-/// test fails because the source TDS has `null` literals in the `i`
-/// column; the pure-side TDS parser treats `null` as `String("null")`
-/// instead of an empty cell, forcing the `i` column to type as
-/// `String`. Then `:y|$y->plus()` on the partition's K-collection
-/// dispatches `plus(String[*])` with the stringified ints and rejects
-/// with `plus: unsupported types String and String`.
-#[ignore = "pure-side: TDS parser treats `null` literal as String, not empty cell — see docs/pure-side-gaps-from-pct.md"]
+/// Uses `extend(over(~p), ~newCol:{p,w,r|...}:y|$y->plus())` — the OLAP
+/// `extend(Relation, _Window, AggColSpec)` overload. The pure-side TDS
+/// `null`-cell parsing is now fixed (bare `null` → empty cell), so column
+/// types are correct. The remaining failure is engine-side OLAP aggregation
+/// null-semantics in `extend_olap.rs`: the expected per-partition sums
+/// exclude the `o`-null rows even though the aggregated `i` column has no
+/// nulls — needs windowed frame + null parity against Java `AggregationShared`.
+#[ignore = "engine-side: extend_olap.rs OLAP aggregation null/frame semantics (TDS null parsing now fixed)"]
 #[test]
 fn pct_composition_testExtendFilterOutNull() {
     run_pct_test(
@@ -525,13 +523,17 @@ fn pct_composition_testExtendFilterOutNull() {
     );
 }
 
-#[ignore = "pure-side: TDS parser treats `null` literal as String, not empty cell — native works (see olap_extend_smoke.rs)"]
+/// OLAP `extend` aggregating `$r.id` (which contains `null`s) with `plus`.
+/// Pure-side TDS `null` parsing is fixed; remaining failure is engine-side:
+/// an empty post-filter partition must emit `null` without calling reduce
+/// (Java `AggregationShared`: `if isEmpty → value(null)`), else `plus()` of
+/// nothing yields `0` (grp=0 expects `null`).
+#[ignore = "engine-side: extend_olap.rs must emit null for empty partitions (TDS null parsing now fixed)"]
 #[test]
 fn pct_composition_testExtendAddOnNull() {
     run_pct_test("meta::pure::functions::relation::tests::composition::testExtendAddOnNull");
 }
 
-#[ignore = "pure-side: TDS parser treats `null` literal as String, not empty cell — native works (see olap_extend_smoke.rs)"]
 #[test]
 fn pct_composition_testExtendJoinStringOnNull() {
     run_pct_test(
