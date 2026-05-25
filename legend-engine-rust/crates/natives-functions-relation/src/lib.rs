@@ -57,6 +57,7 @@ mod descending;
 mod distinct;
 mod drop;
 mod extend;
+mod extend_olap;
 mod filter;
 mod limit;
 mod map;
@@ -74,6 +75,7 @@ pub use descending::Descending;
 pub use distinct::{Distinct, DistinctColSpecArray};
 pub use drop::Drop;
 pub use extend::{ExtendFuncColSpec, ExtendFuncColSpecArray};
+pub use extend_olap::ExtendWindowAggColSpec;
 pub use filter::Filter;
 pub use limit::Limit;
 pub use map::MapRelation;
@@ -130,6 +132,10 @@ impl RuntimeExtension for RelationFunctionsExtension {
         registry.register(
             "extend_Relation_1__FuncColSpecArray_1__Relation_1_",
             ExtendFuncColSpecArray,
+        );
+        registry.register(
+            "extend_Relation_1___Window_1__AggColSpec_1__Relation_1_",
+            ExtendWindowAggColSpec,
         );
         registry.register("limit_Relation_1__Integer_1__Relation_1_", Limit);
         registry.register("drop_Relation_1__Integer_1__Relation_1_", Drop);

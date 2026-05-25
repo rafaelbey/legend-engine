@@ -508,12 +508,16 @@ fn pct_composition_testMixColumnNamesRenameExtend() {
     );
 }
 
-/// Uses the OLAP window-extend overload
-/// `extend(Relation, _Window<T>, FuncColSpec<...>)` — a 3-arg
-/// variant we haven't implemented. Our `ExtendFuncColSpec` rejects
-/// with `expected 2 argument(s), got 3`. Needs `over(~col)` /
-/// `_Window` runtime + the 3-arg extend native.
-#[ignore = "engine-side: OLAP `extend(Relation, _Window, FuncColSpec)` overload not yet implemented"]
+/// Uses `extend(over(~p), ~newCol:{p,w,r|...}:y|$y->plus())` — the
+/// OLAP `extend(Relation, _Window, AggColSpec)` overload. The native
+/// works (see `olap_extend_smoke.rs` for no-null reproducers). This
+/// test fails because the source TDS has `null` literals in the `i`
+/// column; the pure-side TDS parser treats `null` as `String("null")`
+/// instead of an empty cell, forcing the `i` column to type as
+/// `String`. Then `:y|$y->plus()` on the partition's K-collection
+/// dispatches `plus(String[*])` with the stringified ints and rejects
+/// with `plus: unsupported types String and String`.
+#[ignore = "pure-side: TDS parser treats `null` literal as String, not empty cell — see docs/pure-side-gaps-from-pct.md"]
 #[test]
 fn pct_composition_testExtendFilterOutNull() {
     run_pct_test(
@@ -521,13 +525,13 @@ fn pct_composition_testExtendFilterOutNull() {
     );
 }
 
-#[ignore = "engine-side: OLAP `extend(Relation, _Window, FuncColSpec)` overload not yet implemented"]
+#[ignore = "pure-side: TDS parser treats `null` literal as String, not empty cell — native works (see olap_extend_smoke.rs)"]
 #[test]
 fn pct_composition_testExtendAddOnNull() {
     run_pct_test("meta::pure::functions::relation::tests::composition::testExtendAddOnNull");
 }
 
-#[ignore = "engine-side: OLAP `extend(Relation, _Window, FuncColSpec)` overload not yet implemented"]
+#[ignore = "pure-side: TDS parser treats `null` literal as String, not empty cell — native works (see olap_extend_smoke.rs)"]
 #[test]
 fn pct_composition_testExtendJoinStringOnNull() {
     run_pct_test(
