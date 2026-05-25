@@ -508,14 +508,22 @@ fn pct_composition_testMixColumnNamesRenameExtend() {
     );
 }
 
-/// Uses `extend(over(~p), ~newCol:{p,w,r|...}:y|$y->plus())` — the OLAP
-/// `extend(Relation, _Window, AggColSpec)` overload. The pure-side TDS
-/// `null`-cell parsing is now fixed (bare `null` → empty cell), so column
-/// types are correct. The remaining failure is engine-side OLAP aggregation
-/// null-semantics in `extend_olap.rs`: the expected per-partition sums
-/// exclude the `o`-null rows even though the aggregated `i` column has no
-/// nulls — needs windowed frame + null parity against Java `AggregationShared`.
-#[ignore = "engine-side: extend_olap.rs OLAP aggregation null/frame semantics (TDS null parsing now fixed)"]
+/// `extend(over(~p), agg)->filter(...)` — the windowed sum is expected to be
+/// computed over the POST-filter rows (SQL `SUM(i) OVER (PARTITION BY p)` after
+/// `WHERE o IS NOT NULL`): p=0 → 20 (=10+10), not 50. That filter-before-window
+/// behaviour is a SQL-backend-only semantic.
+///
+/// Java's OWN interpreted AND compiled relation engines do NOT implement it —
+/// they produce the full-partition sum (p=0 → 50), identical to our row-by-row
+/// `extend_olap.rs`, and EXCLUDE this test:
+///   - Test_Interpreted_RelationFunctions_PCT.java  (expected 20 / actual 50)
+///   - Test_Compiled_RelationFunctions_PCT.java     (expected 20 / actual 50)
+/// SQL backends that lack window support also exclude it (e.g. Spanner:
+/// "Window Columns not supported").
+///
+/// So our engine is already Java-parity-correct; this stays excluded as a
+/// SQL-only semantic, NOT a bug to fix. (See pure-agent diagnosis in scratch_6.)
+#[ignore = "java-parity: filter-before-window is SQL-backend-only; Java interpreted+compiled also produce the full-partition sum and exclude this test"]
 #[test]
 fn pct_composition_testExtendFilterOutNull() {
     run_pct_test(
