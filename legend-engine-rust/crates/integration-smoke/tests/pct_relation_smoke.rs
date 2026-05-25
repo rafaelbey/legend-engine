@@ -375,15 +375,6 @@ fn pct_select_testSelectAll_MultipleExpressions() {
 // PCT tests — `extend` (FuncColSpec only; OLAP variants need `over`/`_Window`)
 // ---------------------------------------------------------------------------
 
-/// Currently fails with `plus_String_MANY__String_1_: Type mismatch:
-/// expected Object, got Integer`. Lambda body is
-/// `$c.str->toOne() + $c.val->toOne()->toString()` — looks like the
-/// `->toString()` postfix isn't applied to `$c.val->toOne()` before
-/// `plus_String` dispatches; the right-hand arg arrives as Integer,
-/// not String. Numeric extend variants (`* 2`, etc.) pass cleanly,
-/// so the issue is specific to the `String + Numeric->toString()`
-/// chain at the lambda body lowering / operator-precedence layer
-/// (pure-side).
 #[test]
 fn pct_extend_testSimpleExtendStrShared() {
     run_pct_test("meta::pure::functions::relation::tests::extend::testSimpleExtendStrShared");
@@ -504,10 +495,12 @@ fn pct_composition_testMixColumnNamesRenameFilter() {
 /// arg doesn't surface its output column `Z` (the new `newCol`, typed by the
 /// init lambda's return type), so `T+Z` stays generic and the *next*
 /// `rename(~newCol,~_new_col)` can't resolve `_new_col`'s type — `$x._new_col
-/// ->toString()` then mis-dispatches to `toString_Relation`. Tracked as the
-/// extend `T+Z` FuncColSpec-output-column follow-up (distinct from rename;
-/// pass-order-sensitive — the lambda return type isn't known at lowering).
-#[ignore = "pure-side: extend's Relation<T+Z> doesn't surface the FuncColSpec output column (rename's T-Z+V now works; this is the separate extend T+Z follow-up)"]
+/// ->toString()` then mis-dispatches to `toString_Relation`.
+///
+/// Fixed: `extend`'s `FuncColSpec<{T->Any},Z>` arg now binds `Z` to a
+/// single-column `Relation` built from the init lambda's return type
+/// (`colspec_binding_type` in legend-pure-rust `resolve.rs`), so `T+Z`
+/// collapses to the augmented schema and the downstream `rename` resolves.
 #[test]
 fn pct_composition_testMixColumnNamesRenameExtend() {
     run_pct_test(
@@ -559,11 +552,11 @@ fn pct_composition_testExtendJoinStringOnNull() {
 /// `alloc_col_spec_literal` doesn't carry it (the inner
 /// `RelationType` shape isn't materialised).
 ///
-/// Either the platform reflection chain is too strict for our heap
-/// shape, or our `alloc_col_spec_literal` needs to populate the
-/// inner-RelationType.columns chain. Both are tractable but live
-/// upstream / span pure+engine boundary.
-#[ignore = "eval(ColSpec, row) reflection chain hits empty columns slot; needs ColSpec heap-shape work or Pure-body simplification"]
+/// Fixed in legend-pure-rust: `genericType()` now reflects a ColSpec's stored
+/// `classifierGenericType` (so `$col->genericType().typeArguments` resolves to
+/// the inner `RelationType`), and a `Column` — which extends `Function` —
+/// evaluates against the row tuple, so the final `Column.eval($row)` reads the
+/// cell.
 #[test]
 fn pct_eval_testSimpleEval() {
     run_pct_test("meta::pure::functions::relation::tests::eval::testSimpleEval");
