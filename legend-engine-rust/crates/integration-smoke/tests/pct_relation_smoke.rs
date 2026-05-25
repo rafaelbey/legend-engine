@@ -523,12 +523,6 @@ fn pct_composition_testExtendFilterOutNull() {
     );
 }
 
-/// OLAP `extend` aggregating `$r.id` (which contains `null`s) with `plus`.
-/// Pure-side TDS `null` parsing is fixed; remaining failure is engine-side:
-/// an empty post-filter partition must emit `null` without calling reduce
-/// (Java `AggregationShared`: `if isEmpty → value(null)`), else `plus()` of
-/// nothing yields `0` (grp=0 expects `null`).
-#[ignore = "engine-side: extend_olap.rs must emit null for empty partitions (TDS null parsing now fixed)"]
 #[test]
 fn pct_composition_testExtendAddOnNull() {
     run_pct_test("meta::pure::functions::relation::tests::composition::testExtendAddOnNull");

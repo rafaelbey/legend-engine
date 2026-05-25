@@ -237,18 +237,24 @@ fn compare_rows(
 
 /// Compare two `Option<TypedCell>` values for ascending order.
 ///
-/// `None` (empty cell) sorts before any `Some(...)`. Numeric variants
-/// compare numerically; `Decimal`/`StrictDate`/`DateTime` use lexical
-/// compare on their source-form storage (ISO-8601 dates and decimal
-/// literals sort correctly lexicographically). Booleans use
-/// `false < true`. Mixed-type cells (which shouldn't arise within a
-/// single column of a `ParsedTDS`) fall back to a stable type-tag
-/// ordering so the comparator remains total.
+/// `None` (empty cell) sorts AFTER any `Some(...)` — Java Pure's TDS
+/// sort matches SQL's `ORDER BY ASC` default `NULLS LAST`
+/// (verifiable against the `pct_composition_testExtendAddOnNull`
+/// PCT expectation: `8,1,8` precedes `null,1,8` within partition
+/// grp=1 after `sort([~grp->ascending(), ~id->ascending()])`).
+///
+/// Numeric variants compare numerically; `Decimal`/`StrictDate`/
+/// `DateTime` use lexical compare on their source-form storage
+/// (ISO-8601 dates and decimal literals sort correctly
+/// lexicographically). Booleans use `false < true`. Mixed-type
+/// cells (which shouldn't arise within a single column of a
+/// `ParsedTDS`) fall back to a stable type-tag ordering so the
+/// comparator remains total.
 fn compare_cells(a: Option<&TypedCell>, b: Option<&TypedCell>) -> Ordering {
     match (a, b) {
         (None, None) => Ordering::Equal,
-        (None, Some(_)) => Ordering::Less,
-        (Some(_), None) => Ordering::Greater,
+        (None, Some(_)) => Ordering::Greater,
+        (Some(_), None) => Ordering::Less,
         (Some(a), Some(b)) => match (a, b) {
             (TypedCell::Integer(x), TypedCell::Integer(y)) => x.cmp(y),
             (TypedCell::Float(x), TypedCell::Float(y)) => {

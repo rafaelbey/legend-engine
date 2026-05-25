@@ -173,6 +173,16 @@ impl NativeFunction for ExtendWindowAggColSpec {
         }
 
         // -- Per-row reduce: each row gets the V from its partition -----
+        //
+        // Empty-partition (no non-null map results) -> emit `None`
+        // without calling reduce. Mirrors Java
+        // `AggregationShared.processAggregation`: when the per-row
+        // aggregation collection is empty (e.g. every map output was
+        // dropped as Unit by push_flat), the setter is given `null`
+        // directly rather than dispatching `reduce(empty)` which —
+        // depending on the reduce body — would synthesise a zero
+        // (e.g. `plus()` of nothing -> 0, `joinStrings()` of nothing
+        // -> ""). The PCT corpus expects null in both cases.
         let mut new_cells: Vec<Option<TypedCell>> = Vec::with_capacity(parsed.rows.len());
         for key in &partition_keys {
             let collection = partition_groups
@@ -180,11 +190,13 @@ impl NativeFunction for ExtendWindowAggColSpec {
                 .find(|(k, _)| k == key)
                 .map(|(_, vs)| vs.clone())
                 .unwrap_or_default();
+            if collection.is_empty() {
+                new_cells.push(None);
+                continue;
+            }
             // Reduce lambda is `K[*]->V[0..1]`. Pass a Collection
-            // (or scalar/Unit for the degenerate 1/0-element cases).
-            let collection_arg = if collection.is_empty() {
-                Value::Unit
-            } else if collection.len() == 1 {
+            // (or scalar for the degenerate 1-element case).
+            let collection_arg = if collection.len() == 1 {
                 collection
                     .iter()
                     .next()
