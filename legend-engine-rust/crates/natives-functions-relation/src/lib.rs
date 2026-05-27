@@ -61,6 +61,7 @@ mod extend_olap;
 mod filter;
 mod limit;
 mod map;
+mod ranking;
 mod reduce;
 mod rename;
 mod select;
@@ -81,6 +82,7 @@ pub use extend_olap::{ExtendWindowAggColSpec, ExtendWindowFuncColSpec};
 pub use filter::Filter;
 pub use limit::Limit;
 pub use map::MapRelation;
+pub use ranking::{CumulativeDistribution, DenseRank, Ntile, PercentRank, Rank, RowNumber};
 pub use reduce::Reduce;
 pub use rename::Rename;
 pub use select::{SelectAll, SelectColSpec, SelectColSpecArray};
@@ -148,6 +150,25 @@ impl RuntimeExtension for RelationFunctionsExtension {
             "reduce_Relation_1___Window_1__T_1__Function_1__Function_1__U_m_",
             Reduce,
         );
+        // OLAP ranking natives — invoked from inside an
+        // `extend(Relation, _Window, FuncColSpec)` map lambda, which
+        // hands them the sorted partition sub-TDS + the row's
+        // within-partition position.
+        registry.register("rowNumber_Relation_1__T_1__Integer_1_", RowNumber);
+        registry.register("rank_Relation_1___Window_1__T_1__Integer_1_", Rank);
+        registry.register(
+            "denseRank_Relation_1___Window_1__T_1__Integer_1_",
+            DenseRank,
+        );
+        registry.register(
+            "percentRank_Relation_1___Window_1__T_1__Float_1_",
+            PercentRank,
+        );
+        registry.register(
+            "cumulativeDistribution_Relation_1___Window_1__T_1__Float_1_",
+            CumulativeDistribution,
+        );
+        registry.register("ntile_Relation_1__T_1__Integer_1__Integer_1_", Ntile);
         registry.register("limit_Relation_1__Integer_1__Relation_1_", Limit);
         registry.register("drop_Relation_1__Integer_1__Relation_1_", Drop);
         registry.register(

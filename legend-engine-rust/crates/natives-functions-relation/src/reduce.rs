@@ -53,8 +53,8 @@ use legend_pure_runtime::value::Value;
 
 use crate::window_runtime::{
     frame_row_indices, partition_row_indices, push_flat, read_frame, read_partition_cols,
-    read_sort_keys, resolve_partition_indices, resolve_sort_indices, row_tuple_to_source_index,
-    sort_partitions_in_place,
+    read_row_index, read_sort_keys, resolve_partition_indices, resolve_sort_indices,
+    row_tuple_to_source_index, sort_partitions_in_place,
 };
 
 /// Pure `reduce<T,V,U|m>(rel:Relation<T>, w:_Window<T>, row:T, map, agg):U[m]`.
@@ -87,37 +87,50 @@ impl NativeFunction for Reduce {
         let map_fn = ctx.evaluate(&args[3])?.into_value();
         let agg_fn = ctx.evaluate(&args[4])?.into_value();
 
-        // -- partition + sort plumbing --------------------------------
-        let partition_indices = resolve_partition_indices(&partition_cols, &parsed, "reduce")?;
-        let sort_indices = resolve_sort_indices(&sort_keys, &parsed, "reduce")?;
+        // -- locate the row's partition + position ----------------------
+        //
+        // Preferred path: when `reduce` is called from inside
+        // `extend(Relation, _Window, FuncColSpec)`, `rel` is already the
+        // sorted partition sub-TDS and `row` carries its within-partition
+        // position via `__row_index` (mirrors Java's
+        // `RowContainer(winTDS, i)`). The partition is the whole `rel`,
+        // already in sort order — no re-partition / content match needed.
+        //
+        // Fallback path (`rel` is a full relation, `row` has no index):
+        // re-partition `rel` by the window, stable-sort each partition,
+        // then content-match the row to find its (partition, position).
+        let (partition_rows, position) = if let Some(idx) = read_row_index(&row_obj, ctx) {
+            ((0..parsed.rows.len()).collect::<Vec<usize>>(), idx)
+        } else {
+            let partition_indices = resolve_partition_indices(&partition_cols, &parsed, "reduce")?;
+            let sort_indices = resolve_sort_indices(&sort_keys, &parsed, "reduce")?;
+            let mut partitions = partition_row_indices(&parsed, &partition_indices);
+            sort_partitions_in_place(&mut partitions, &parsed, &sort_indices);
 
-        let mut partitions = partition_row_indices(&parsed, &partition_indices);
-        sort_partitions_in_place(&mut partitions, &parsed, &sort_indices);
-
-        // -- locate row -------------------------------------------------
-        let row_src_idx = row_tuple_to_source_index(&row_obj, &parsed, ctx)?.ok_or_else(|| {
-            PureException::from(PureRuntimeError::EvaluationError(
-                "reduce: input row not found in receiver relation".into(),
-            ))
-        })?;
-
-        // Find the partition containing this row and the row's position
-        // within the (now-sorted) partition.
-        let (_part_key, partition_rows) = partitions
-            .iter()
-            .find(|(_, rows)| rows.contains(&row_src_idx))
-            .ok_or_else(|| {
-                PureException::from(PureRuntimeError::EvaluationError(
-                    "reduce: failed to locate row's partition (internal)".into(),
-                ))
-            })?;
-        let position = partition_rows
-            .iter()
-            .position(|&i| i == row_src_idx)
-            .expect("row known to be in partition");
+            let row_src_idx =
+                row_tuple_to_source_index(&row_obj, &parsed, ctx)?.ok_or_else(|| {
+                    PureException::from(PureRuntimeError::EvaluationError(
+                        "reduce: input row not found in receiver relation".into(),
+                    ))
+                })?;
+            let partition_rows = partitions
+                .iter()
+                .find(|(_, rows)| rows.contains(&row_src_idx))
+                .map(|(_, rows)| rows.clone())
+                .ok_or_else(|| {
+                    PureException::from(PureRuntimeError::EvaluationError(
+                        "reduce: failed to locate row's partition (internal)".into(),
+                    ))
+                })?;
+            let position = partition_rows
+                .iter()
+                .position(|&i| i == row_src_idx)
+                .expect("row known to be in partition");
+            (partition_rows, position)
+        };
 
         // -- frame ------------------------------------------------------
-        let in_frame = frame_row_indices(partition_rows, position, frame.as_ref());
+        let in_frame = frame_row_indices(&partition_rows, position, frame.as_ref());
 
         // -- per-row map -----------------------------------------------
         let mut v_values: PVector<Value> = PVector::new();

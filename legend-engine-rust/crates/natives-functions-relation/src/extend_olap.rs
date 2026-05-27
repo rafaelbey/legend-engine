@@ -51,8 +51,8 @@ use legend_pure_runtime::native::relation::shared::{
 use legend_pure_runtime::value::Value;
 
 use crate::window_runtime::{
-    frame_row_indices, partition_row_indices, read_frame, read_partition_cols, read_sort_keys,
-    resolve_partition_indices, resolve_sort_indices, sort_partitions_in_place,
+    attach_row_index, frame_row_indices, partition_row_indices, read_frame, read_partition_cols,
+    read_sort_keys, resolve_partition_indices, resolve_sort_indices, sort_partitions_in_place,
 };
 
 /// `extend(Relation, _Window, AggColSpec)`.
@@ -238,9 +238,25 @@ impl NativeFunction for ExtendWindowFuncColSpec {
         let tds_obj = unwrap_instance_value(&rel_value, instance_value_id, ctx)?;
         let parsed = read_parsed_tds("extend", &tds_obj, ctx)?;
 
-        // -- Window: kept opaque; FuncColSpec dispatch is per-row -------
+        // -- Window: partition + sortInfo. The map lambda receives the
+        //    *sorted partition sub-TDS* as arg0 and a row tuple carrying
+        //    its within-partition position — the calling convention the
+        //    ranking natives (`rowNumber`, `rank`, …) and the standalone
+        //    `reduce` rely on (mirrors Java `RowContainer(winTDS, i)`).
         let window_value = ctx.evaluate(&args[1])?.into_value();
         let window_obj = unwrap_instance_value(&window_value, instance_value_id, ctx)?;
+        let partition_cols = read_partition_cols(&window_obj, ctx)?;
+        let sort_keys = read_sort_keys(&window_obj, ctx)?;
+        let partition_indices = resolve_partition_indices(
+            &partition_cols,
+            &parsed,
+            "extend (Relation, _Window, FuncColSpec)",
+        )?;
+        let sort_indices = resolve_sort_indices(
+            &sort_keys,
+            &parsed,
+            "extend (Relation, _Window, FuncColSpec)",
+        )?;
 
         // -- FuncColSpec: name + function -------------------------------
         let fcs_value = ctx.evaluate(&args[2])?.into_value();
@@ -263,18 +279,39 @@ impl NativeFunction for ExtendWindowFuncColSpec {
             })?;
         let function_value = read_function_slot(&fcs_obj, "function", ctx, "FuncColSpec.function")?;
 
-        let rel_arg = Value::Object(tds_obj.clone());
         let window_arg = Value::Object(window_obj.clone());
 
-        // -- Per-row evaluation -----------------------------------------
-        let mut new_cells: Vec<Option<TypedCell>> = Vec::with_capacity(parsed.rows.len());
-        for row in &parsed.rows {
-            let row_tuple = build_row_tuple(&parsed.columns, row, ctx)?;
-            let val = ctx.call_function(
-                &function_value,
-                &[rel_arg.clone(), window_arg.clone(), Value::Object(row_tuple)],
-            )?;
-            new_cells.push(value_to_typed_cell(&val));
+        // -- Partition + sort, then per-partition / per-row dispatch -----
+        // Group row indices by partition key (source order preserved),
+        // stable-sort each group by sortInfo.
+        let mut partitions = partition_row_indices(&parsed, &partition_indices);
+        sort_partitions_in_place(&mut partitions, &parsed, &sort_indices);
+
+        // Result column, placed back at each row's ORIGINAL source index.
+        let mut new_cells: Vec<Option<TypedCell>> = vec![None; parsed.rows.len()];
+        for (_key, sorted_indices) in &partitions {
+            // Partition sub-TDS: this partition's rows in sort order.
+            let partition_parsed = ParsedTDS {
+                csv: String::new(),
+                columns: parsed.columns.clone(),
+                rows: sorted_indices.iter().map(|&i| parsed.rows[i].clone()).collect(),
+            };
+            let partition_tds = alloc_tds_from_parsed(ctx, &partition_parsed)?;
+            let partition_arg = Value::Object(partition_tds);
+
+            for (pos, &src_idx) in sorted_indices.iter().enumerate() {
+                let row_tuple = build_row_tuple(&parsed.columns, &parsed.rows[src_idx], ctx)?;
+                attach_row_index(&row_tuple, pos, ctx)?;
+                let val = ctx.call_function(
+                    &function_value,
+                    &[
+                        partition_arg.clone(),
+                        window_arg.clone(),
+                        Value::Object(row_tuple),
+                    ],
+                )?;
+                new_cells[src_idx] = value_to_typed_cell(&val);
+            }
         }
 
         let (inferred_type, inferred_mult) = infer_column_type_and_mult(&new_cells);

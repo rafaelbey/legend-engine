@@ -40,8 +40,7 @@
 
 use std::cmp::Ordering;
 
-use legend_pure_dsl_tds::csv::{ColumnType, ParsedTDS, TypedCell};
-use legend_pure_parser_pure::types::Multiplicity;
+use legend_pure_dsl_tds::csv::{ParsedTDS, TypedCell};
 use smol_str::SmolStr;
 
 use im_rc::Vector as PVector;
@@ -53,6 +52,44 @@ use legend_pure_runtime::value::Value;
 // ---------------------------------------------------------------------------
 // Window slot readers
 // ---------------------------------------------------------------------------
+
+/// Hidden slot on a row-tuple object carrying the row's 0-based
+/// position within its (sorted) window partition. Attached by
+/// `extend(Relation, _Window, FuncColSpec)` so the ranking natives
+/// (`rowNumber`, `rank`, …) and the standalone `reduce` can locate the
+/// row without a content match. Mirrors Java's `RowContainer.getRow()`.
+///
+/// `__`-prefixed to match the runtime's existing reserved-slot
+/// convention (`__typeArguments`, `__typeVariableValues`); not a legal
+/// user TDS column name.
+pub(crate) const ROW_INDEX_SLOT: &str = "__row_index";
+
+/// Attach [`ROW_INDEX_SLOT`] to a freshly-built row tuple.
+#[allow(clippy::result_large_err)]
+pub(crate) fn attach_row_index(
+    row_tuple: &ObjectHandle,
+    index: usize,
+    ctx: &mut dyn EvalContextTrait,
+) -> Result<(), PureException> {
+    ctx.heap_mut()
+        .mutate_add(row_tuple, ROW_INDEX_SLOT, &[Value::Integer(index as i64)])
+        .map_err(PureException::from)
+}
+
+/// Read [`ROW_INDEX_SLOT`] off a row tuple, if present.
+pub(crate) fn read_row_index(
+    row_tuple: &ObjectHandle,
+    ctx: &mut dyn EvalContextTrait,
+) -> Option<usize> {
+    ctx.heap()
+        .get_property_values(row_tuple, ROW_INDEX_SLOT)
+        .ok()?
+        .iter()
+        .find_map(|v| match v {
+            Value::Integer(i) if *i >= 0 => Some(*i as usize),
+            _ => None,
+        })
+}
 
 /// Read the window's `partition: String[*]` slot as a column-name list.
 #[allow(clippy::result_large_err)]
@@ -213,7 +250,12 @@ pub(crate) enum FrameOffset {
     /// Integer offset (Rows) — negative = preceding, 0 = current,
     /// positive = following.
     Int(i64),
-    /// Numeric offset (Range) — used against the sort column's value.
+    /// Numeric offset (Range) — compared against the sort column's
+    /// value. Captured from the heap but not yet consumed:
+    /// `frame_row_indices` falls back to the full partition for Range
+    /// frames (the `testRange_*` PCT variants are a follow-up). The
+    /// payload is retained so that work doesn't re-plumb the reader.
+    #[allow(dead_code)]
     Numeric(f64),
 }
 
@@ -542,30 +584,8 @@ fn resolve_offset(
 }
 
 // ---------------------------------------------------------------------------
-// Function-slot + Value helpers (lifted from extend_olap.rs)
+// Collection-flatten helper (shared by reduce + extend OLAP natives)
 // ---------------------------------------------------------------------------
-
-#[allow(clippy::result_large_err)]
-pub(crate) fn read_function_slot(
-    obj: &ObjectHandle,
-    slot: &str,
-    ctx: &mut dyn EvalContextTrait,
-    label: &'static str,
-) -> Result<Value, PureException> {
-    let values = ctx
-        .heap()
-        .get_property_values(obj, slot)
-        .map_err(PureException::from)?;
-    values
-        .iter()
-        .find(|v| matches!(v, Value::Function(_)))
-        .cloned()
-        .ok_or_else(|| {
-            PureException::from(PureRuntimeError::EvaluationError(format!(
-                "{label}: {slot} slot missing or not a Function"
-            )))
-        })
-}
 
 /// Append a Value (possibly a Collection) to `out`, flattening one
 /// Collection layer and dropping Unit. Mirrors the shape `filter` /
@@ -580,50 +600,6 @@ pub(crate) fn push_flat(out: &mut PVector<Value>, v: &Value) {
         Value::Unit => {}
         scalar => out.push_back(scalar.clone()),
     }
-}
-
-pub(crate) fn value_to_typed_cell(value: &Value) -> Option<TypedCell> {
-    match value {
-        Value::Unit => None,
-        Value::Integer(i) => Some(TypedCell::Integer(*i)),
-        Value::Float(f) => Some(TypedCell::Float(*f)),
-        Value::Boolean(b) => Some(TypedCell::Boolean(*b)),
-        Value::String(s) => Some(TypedCell::String(s.clone())),
-        _ => None,
-    }
-}
-
-pub(crate) fn infer_column_type_and_mult(
-    cells: &[Option<TypedCell>],
-) -> (ColumnType, Multiplicity) {
-    let mut tag: Option<ColumnType> = None;
-    let mut any_empty = false;
-    for cell in cells {
-        let Some(cell) = cell else {
-            any_empty = true;
-            continue;
-        };
-        let cell_tag = match cell {
-            TypedCell::Integer(_) => ColumnType::Integer,
-            TypedCell::Float(_) => ColumnType::Float,
-            TypedCell::Boolean(_) => ColumnType::Boolean,
-            TypedCell::String(_) => ColumnType::String,
-            TypedCell::Decimal(_) => ColumnType::Decimal,
-            TypedCell::StrictDate(_) => ColumnType::StrictDate,
-            TypedCell::DateTime(_) => ColumnType::DateTime,
-        };
-        tag = Some(match tag {
-            None => cell_tag,
-            Some(prev) if prev == cell_tag => prev,
-            _ => ColumnType::String,
-        });
-    }
-    let mult = if any_empty {
-        Multiplicity::ZeroOrOne
-    } else {
-        Multiplicity::PureOne
-    };
-    (tag.unwrap_or(ColumnType::String), mult)
 }
 
 // ---------------------------------------------------------------------------

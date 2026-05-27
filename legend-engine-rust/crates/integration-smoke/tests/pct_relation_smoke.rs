@@ -821,3 +821,58 @@ fn pct_reduce_testRows_UnboundedPreceding_CurrentRow_WithMultiplePartitions_With
         "meta::pure::functions::relation::tests::reduce::testRows_UnboundedPreceding_CurrentRow_WithMultiplePartitions_WithSingleOrderBy",
     );
 }
+
+// ---------------------------------------------------------------------------
+// PCT tests — OLAP ranking natives (rowNumber / rank / denseRank /
+// percentRank / cumulativeDistribution / ntile).
+//
+// Each test is `extend(over(~grp, ~id->descending()),
+//     ~other:{p,w,r| $p->rowNumber($r)})` (or the rank/etc. analogue).
+// The FuncColSpec extend passes the sorted partition sub-TDS as `$p`
+// and a row tuple carrying its within-partition position; the native
+// reads that position (+ sort columns from `$w`) and reproduces the
+// Java `TestTDS` ranking formulas. Assertions are `assertEquals` on
+// `toString()`, so no `assertTdsEquivalent` reflection chain.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_rowNumber_testOLAPWithPartitionAndRowNumber() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::rowNumber::testOLAPWithPartitionAndRowNumber",
+    );
+}
+
+#[test]
+fn pct_rank_testOLAPWithPartitionAndOrderRank() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::rank::testOLAPWithPartitionAndOrderRank",
+    );
+}
+
+#[test]
+fn pct_denseRank_testOLAPWithPartitionAndOrderDenseRank() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::denseRank::testOLAPWithPartitionAndOrderDenseRank",
+    );
+}
+
+#[test]
+fn pct_percentRank_testOLAPWithPartitionAndOrderPercentRank() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::percentRank::testOLAPWithPartitionAndOrderPercentRank",
+    );
+}
+
+#[test]
+fn pct_cumulativeDistribution_testOLAPWithPartitionAndOrderCummulativeDistribution() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::cumulativeDistribution::testOLAPWithPartitionAndOrderCummulativeDistribution",
+    );
+}
+
+#[test]
+fn pct_ntile_testOLAPWithPartitionAndOrderNTile() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::ntile::testOLAPWithPartitionAndOrderNTile",
+    );
+}
