@@ -355,11 +355,22 @@ fn read_frame_offset(
         match v {
             Value::Integer(i) => return Ok(FrameOffset::Int(*i)),
             Value::Float(f) => return Ok(FrameOffset::Numeric(*f)),
+            // Decimal offset (`0.5d`) — Range frames compare against the
+            // numeric sort value in f64, so collapse to Numeric. Parse
+            // via Display to avoid a direct rust_decimal dependency.
+            Value::Decimal(d) => {
+                let f = d.to_string().parse::<f64>().map_err(|_| {
+                    PureException::from(PureRuntimeError::EvaluationError(format!(
+                        "window_runtime: Frame.{slot}.value Decimal {d} not representable as f64"
+                    )))
+                })?;
+                return Ok(FrameOffset::Numeric(f));
+            }
             _ => {}
         }
     }
     Err(PureException::from(PureRuntimeError::EvaluationError(
-        format!("window_runtime: Frame.{slot}.value slot missing or not Integer/Float"),
+        format!("window_runtime: Frame.{slot}.value slot missing or not Integer/Float/Decimal"),
     )))
 }
 

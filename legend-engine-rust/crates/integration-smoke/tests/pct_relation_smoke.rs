@@ -1187,15 +1187,12 @@ fn pct_over_testRange_WithNumbers_CurrentRow_NFollowing_WithoutPartition_WithSin
     );
 }
 
-// PURE-SIDE GAP: this is the only Range test mixing a Decimal frame
-// offset (`0.5d`) with a Float offset (`2.5`) in `_range(0.5d, 2.5)`.
-// The `over(_, _range)` boundary-validation in legend-pure-rust raises
-// "Cannot compare Decimal and Float" before our frame native runs — a
-// numeric mixed-type comparison gap, not a Range-frame issue (the
-// engine native handles the value range correctly; the other 23
-// numeric Range over.pure tests pass). Filed via scratch_5.txt.
+// `_range(0.5d, 2.5)` mixes a Decimal and a Float frame offset. The
+// Decimal/Float comparison gap that blocked this was fixed in
+// legend-pure-rust 473942bd926 (numeric_cmp now promotes across all
+// Number subtypes via compare_values); the engine Range-frame native
+// already handled the value range.
 #[test]
-#[ignore = "pure-side: Decimal/Float mixed-offset comparison in _range boundary validation"]
 fn pct_over_testRange_WithNumbers_NFollowing_NFollowing_WithoutPartition_WithSingleOrderBy() {
     run_pct_test(
         "meta::pure::functions::relation::tests::over::testRange_WithNumbers_NFollowing_NFollowing_WithoutPartition_WithSingleOrderBy",
@@ -1363,10 +1360,9 @@ fn pct_reduce_testRange_WithNumbers_CurrentRow_NFollowing_WithoutPartition_WithS
     );
 }
 
-// PURE-SIDE GAP: same Decimal/Float mixed-offset `_range(0.5d, 2.5)`
-// comparison gap as the over.pure counterpart above.
+// Same `_range(0.5d, 2.5)` Decimal/Float case as the over.pure
+// counterpart above — unblocked by legend-pure-rust 473942bd926.
 #[test]
-#[ignore = "pure-side: Decimal/Float mixed-offset comparison in _range boundary validation"]
 fn pct_reduce_testRange_WithNumbers_NFollowing_NFollowing_WithoutPartition_WithSingleOrderBy() {
     run_pct_test(
         "meta::pure::functions::relation::tests::reduce::testRange_WithNumbers_NFollowing_NFollowing_WithoutPartition_WithSingleOrderBy",
