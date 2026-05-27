@@ -910,3 +910,112 @@ fn pct_extend_testOLAPAggWithPartitionAndOrderWindowMultipleColumns_MultipleExpr
         "meta::pure::functions::relation::tests::extend::testOLAPAggWithPartitionAndOrderWindowMultipleColumns_MultipleExpressions",
     );
 }
+
+// ---------------------------------------------------------------------------
+// PCT tests — slice / row-navigation family.
+//
+// `offset` (via Pure-defined `lag`/`lead`), `first`/`last`/`nth`
+// (frame-relative, called from inside extend(over(...), ~col:{p,w,r|…}))
+// and `slice` (whole-relation [start, stop) range). `drop`/`limit` are
+// already covered above. `first`/`last`/`nth` rely on the SQL default
+// running frame (ORDER BY present, no explicit frame).
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_offset_lag_testOLAPWithPartitionAndOrderWindowUsingLag() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::lag::testOLAPWithPartitionAndOrderWindowUsingLag",
+    );
+}
+
+#[test]
+fn pct_offset_lead_testOLAPWithPartitionAndOrderWindow() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::lead::testOLAPWithPartitionAndOrderWindow",
+    );
+}
+
+#[test]
+fn pct_first_testOLAPWithPartitionAndOrderFirstWindow() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::first::testOLAPWithPartitionAndOrderFirstWindow",
+    );
+}
+
+#[test]
+fn pct_last_testOLAPWithPartitionAndOrderLastWindow() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::last::testOLAPWithPartitionAndOrderLastWindow",
+    );
+}
+
+#[test]
+fn pct_nth_testOLAPWithPartitionAndOrderNthWindow() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::nth::testOLAPWithPartitionAndOrderNthWindow",
+    );
+}
+
+#[test]
+fn pct_slice_testSimpleSliceShared() {
+    run_pct_test("meta::pure::functions::relation::tests::slice::testSimpleSliceShared");
+}
+
+#[test]
+fn pct_slice_testSimpleSlice_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::slice::testSimpleSlice_MultipleExpressions",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// PCT tests — OLAP multi-column FuncColSpecArray window
+// (`extend(over(...), ~[newCol:{p,w,r|$p->lead($r).id}, other:{p,w,r|
+//   $p->first($w,$r).name}])`). Unblocked now that the slice-family
+// natives (lead/lag/first) exist.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_extend_testOLAPWithPartitionAndOrderWindowMultipleColumns() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testOLAPWithPartitionAndOrderWindowMultipleColumns",
+    );
+}
+
+#[test]
+fn pct_extend_testOLAPWithPartitionAndOrderWindowMultipleColumns_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testOLAPWithPartitionAndOrderWindowMultipleColumns_MultipleExpressions",
+    );
+}
+
+#[test]
+fn pct_extend_testOLAPWithPartitionAndMultipleOrderWindowMultipleColumns() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testOLAPWithPartitionAndMultipleOrderWindowMultipleColumns",
+    );
+}
+
+#[test]
+fn pct_extend_testOLAPWithMultiplePartitionsAndOrderWindowMultipleColumns() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testOLAPWithMultiplePartitionsAndOrderWindowMultipleColumns",
+    );
+}
+
+#[test]
+fn pct_extend_testOLAPWithMultiplePartitionsAndOrderWindowMultipleColumns_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testOLAPWithMultiplePartitionsAndOrderWindowMultipleColumns_MultipleExpressions",
+    );
+}
+
+// `filter(...)->extend(over(...))` — the filter runs *before* the
+// window (filter->extend, not the SQL window-pushdown extend->filter
+// case), so the windowed columns see the already-filtered relation.
+#[test]
+fn pct_extend_testOLAPWithPartitionAndMultipleOrderWindowMultipleColumnsWithFilter() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testOLAPWithPartitionAndMultipleOrderWindowMultipleColumnsWithFilter",
+    );
+}

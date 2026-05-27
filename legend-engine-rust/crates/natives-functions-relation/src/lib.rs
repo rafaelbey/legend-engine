@@ -66,6 +66,7 @@ mod reduce;
 mod rename;
 mod select;
 mod size;
+mod slice;
 mod sort;
 mod sort_info;
 mod tostring;
@@ -90,6 +91,7 @@ pub use reduce::Reduce;
 pub use rename::Rename;
 pub use select::{SelectAll, SelectColSpec, SelectColSpecArray};
 pub use size::Size;
+pub use slice::{First, Last, Nth, Offset, Slice};
 pub use sort::Sort;
 pub use tostring::{ToStringRelation, ToStringRelationTyped};
 
@@ -180,6 +182,20 @@ impl RuntimeExtension for RelationFunctionsExtension {
             CumulativeDistribution,
         );
         registry.register("ntile_Relation_1__T_1__Integer_1__Integer_1_", Ntile);
+        // Slice / row-navigation natives. `offset` powers the
+        // Pure-defined `lag`/`lead`; `first`/`last`/`nth` are
+        // frame-relative; `slice` is a whole-relation row range.
+        registry.register("offset_Relation_1__T_1__Integer_1__T_$0_1$_", Offset);
+        registry.register("first_Relation_1___Window_1__T_1__T_$0_1$_", First);
+        registry.register("last_Relation_1___Window_1__T_1__T_$0_1$_", Last);
+        registry.register(
+            "nth_Relation_1___Window_1__T_1__Integer_1__T_$0_1$_",
+            Nth,
+        );
+        registry.register(
+            "slice_Relation_1__Integer_1__Integer_1__Relation_1_",
+            Slice,
+        );
         registry.register("limit_Relation_1__Integer_1__Relation_1_", Limit);
         registry.register("drop_Relation_1__Integer_1__Relation_1_", Drop);
         registry.register(

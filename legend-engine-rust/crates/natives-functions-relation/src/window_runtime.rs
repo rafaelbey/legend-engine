@@ -557,6 +557,40 @@ pub(crate) fn frame_row_indices(
     partition_row_indices[lo..=hi].to_vec()
 }
 
+/// Low boundary index of `frame` for a row at `position` in a partition
+/// of size `n`. Mirrors Java `Rows.getLow`: `fromUnbounded ? 0 :
+/// max(0, position + offsetFrom)`. Used by `first` / `nth`. `None`
+/// frame (no ORDER BY) -> 0 (whole partition starts at row 0).
+pub(crate) fn frame_low(frame: Option<&Frame>, position: usize, _n: usize) -> usize {
+    match frame {
+        None => 0,
+        Some(f) => match &f.from {
+            FrameOffset::Unbounded => 0,
+            FrameOffset::Int(d) => (position as i64 + d).max(0) as usize,
+            FrameOffset::Numeric(_) => position, // Range: follow-up
+        },
+    }
+}
+
+/// High boundary index of `frame` for a row at `position` in a
+/// partition of size `n`. Mirrors Java `Rows.getHigh`: `toUnbounded ?
+/// n-1 : min(n-1, position + offsetTo)`. Used by `last` / `nth`.
+/// `None` frame (no ORDER BY) -> `n-1` (whole partition).
+pub(crate) fn frame_high(frame: Option<&Frame>, position: usize, n: usize) -> usize {
+    let last = n.saturating_sub(1);
+    match frame {
+        None => last,
+        Some(f) => match &f.to {
+            FrameOffset::Unbounded => last,
+            FrameOffset::Int(d) => {
+                let v = position as i64 + d;
+                v.clamp(0, last as i64) as usize
+            }
+            FrameOffset::Numeric(_) => position, // Range: follow-up
+        },
+    }
+}
+
 #[derive(Clone, Copy)]
 enum FrameSide {
     From,
