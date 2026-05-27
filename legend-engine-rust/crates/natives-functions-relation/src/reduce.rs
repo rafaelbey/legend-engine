@@ -52,7 +52,7 @@ use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, e
 use legend_pure_runtime::value::Value;
 
 use crate::window_runtime::{
-    effective_frame, frame_row_indices, partition_row_indices, push_flat, read_frame,
+    effective_frame, frame_indices_for_row, partition_row_indices, push_flat, read_frame,
     read_partition_cols, read_row_index, read_sort_keys, resolve_partition_indices,
     resolve_sort_indices, row_tuple_to_source_index, sort_partitions_in_place,
 };
@@ -102,11 +102,13 @@ impl NativeFunction for Reduce {
         // Fallback path (`rel` is a full relation, `row` has no index):
         // re-partition `rel` by the window, stable-sort each partition,
         // then content-match the row to find its (partition, position).
+        // Sort columns are needed both for the fallback re-sort and for
+        // Range frame value comparison.
+        let sort_indices = resolve_sort_indices(&sort_keys, &parsed, "reduce")?;
         let (partition_rows, position) = if let Some(idx) = read_row_index(&row_obj, ctx) {
             ((0..parsed.rows.len()).collect::<Vec<usize>>(), idx)
         } else {
             let partition_indices = resolve_partition_indices(&partition_cols, &parsed, "reduce")?;
-            let sort_indices = resolve_sort_indices(&sort_keys, &parsed, "reduce")?;
             let mut partitions = partition_row_indices(&parsed, &partition_indices);
             sort_partitions_in_place(&mut partitions, &parsed, &sort_indices);
 
@@ -133,7 +135,8 @@ impl NativeFunction for Reduce {
         };
 
         // -- frame ------------------------------------------------------
-        let in_frame = frame_row_indices(&partition_rows, position, frame.as_ref());
+        let in_frame =
+            frame_indices_for_row(&parsed, &partition_rows, position, frame.as_ref(), &sort_indices);
 
         // -- per-row map -----------------------------------------------
         let mut v_values: PVector<Value> = PVector::new();

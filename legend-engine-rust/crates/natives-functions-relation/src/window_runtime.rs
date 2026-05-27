@@ -521,13 +521,8 @@ pub(crate) fn sort_partitions_in_place(
 /// `position_in_partition` inside `partition_row_indices`. The returned
 /// vec is the in-frame subset (already in sort order).
 ///
-/// - `None` frame -> full partition (`partition_row_indices.clone()`).
-/// - `Rows` frame -> position-based offsets clamped to the partition.
-/// - `Range` / `RangeInterval` -> currently approximated by Rows
-///   semantics on the sort-column value (TODO: full value-range
-///   semantics need access to the source row's sort-column value at
-///   call time). Most over.pure / reduce.pure tests use `Rows`, so
-///   Range is a follow-up.
+/// `Rows`-only (and `None` = full partition). Range frames need the
+/// sort-column values and go through [`frame_indices_for_row`].
 pub(crate) fn frame_row_indices(
     partition_row_indices: &[usize],
     position_in_partition: usize,
@@ -538,9 +533,9 @@ pub(crate) fn frame_row_indices(
         return partition_row_indices.to_vec();
     };
     if !matches!(frame.kind, FrameKind::Rows) {
-        // Range / RangeInterval not yet supported. Fall back to the
-        // full partition so the test fails on an assertion mismatch
-        // rather than a panic — the diagnosis surfaces clearly.
+        // Range / RangeInterval need values — caller should route
+        // through `frame_indices_for_row`. Defensive full-partition
+        // fallback so a mis-wired caller mismatches rather than panics.
         return partition_row_indices.to_vec();
     }
     let lo = match resolve_offset(&frame.from, position_in_partition, n, FrameSide::From) {
@@ -555,6 +550,133 @@ pub(crate) fn frame_row_indices(
         return Vec::new();
     }
     partition_row_indices[lo..=hi].to_vec()
+}
+
+/// The in-frame source-row indices (in sort order) for the row at
+/// `position` within a sorted partition, dispatching on frame kind:
+///
+/// - `None` -> full partition; `Rows` -> [`frame_row_indices`].
+/// - `Range` (numeric) -> value-based membership over the single sort
+///   column, replicating Java `RelationNativeImplementation`'s
+///   per-row range predicate (incl. the NULL rules: a NULL current
+///   value frames only NULL peers; NULL peers join unbounded
+///   boundaries on the NULLS-FIRST/LAST side). Requires exactly one
+///   sort column.
+/// - `RangeInterval` -> not yet implemented; full-partition fallback.
+pub(crate) fn frame_indices_for_row(
+    parsed: &ParsedTDS,
+    sorted: &[usize],
+    position: usize,
+    frame: Option<&Frame>,
+    sort_indices: &[(usize, SortDir)],
+) -> Vec<usize> {
+    match frame {
+        None => sorted.to_vec(),
+        Some(f) if matches!(f.kind, FrameKind::Rows) => {
+            frame_row_indices(sorted, position, frame)
+        }
+        Some(f) if matches!(f.kind, FrameKind::Range) => {
+            range_frame_indices(parsed, sorted, position, f, sort_indices)
+        }
+        // RangeInterval: follow-up (date + duration arithmetic).
+        Some(_) => sorted.to_vec(),
+    }
+}
+
+/// Numeric `Range` frame membership. For the current row at `position`
+/// in the sorted partition, return the source indices of all rows whose
+/// single sort-column value falls in the value range
+/// `[current ± offsetFrom, current ± offsetTo]` (sign per sort
+/// direction), preserving sort order. Mirrors the Java numeric branch
+/// of `performMapReduce`.
+fn range_frame_indices(
+    parsed: &ParsedTDS,
+    sorted: &[usize],
+    position: usize,
+    frame: &Frame,
+    sort_indices: &[(usize, SortDir)],
+) -> Vec<usize> {
+    // Range requires exactly one sort column; if absent, fall back.
+    let Some(&(col, dir)) = sort_indices.first() else {
+        return sorted.to_vec();
+    };
+    let value_at = |sorted_pos: usize| -> Option<f64> {
+        cell_as_f64(parsed.rows[sorted[sorted_pos]][col].as_ref())
+    };
+    let current = value_at(position);
+    let from = frame_offset_as_f64(&frame.from); // None = unbounded
+    let to = frame_offset_as_f64(&frame.to);
+
+    let mut out: Vec<usize> = Vec::new();
+    for k in 0..sorted.len() {
+        let peer = value_at(k);
+        if in_numeric_range(current, peer, from, to, dir) {
+            out.push(sorted[k]);
+        }
+    }
+    out
+}
+
+/// The numeric `Range` inclusion predicate for a single peer value,
+/// given the current row's value, the frame offsets (`None` =
+/// unbounded) and the sort direction. Faithful to Java.
+fn in_numeric_range(
+    current: Option<f64>,
+    peer: Option<f64>,
+    from: Option<f64>,
+    to: Option<f64>,
+    dir: SortDir,
+) -> bool {
+    // NULL current -> only NULL peers are in frame.
+    let Some(cur) = current else {
+        return peer.is_none();
+    };
+    match (from, to) {
+        // UNBOUNDED .. UNBOUNDED -> everything.
+        (None, None) => true,
+        // UNBOUNDED PRECEDING .. N
+        (None, Some(off)) => match dir {
+            SortDir::Asc => peer.is_some_and(|v| v <= cur + off),
+            // DESC: NULLS FIRST join the unbounded-preceding side.
+            SortDir::Desc => match peer {
+                None => true,
+                Some(v) => cur - off <= v,
+            },
+        },
+        // N .. UNBOUNDED FOLLOWING
+        (Some(off), None) => match dir {
+            SortDir::Asc => match peer {
+                // ASC: NULLS LAST join the unbounded-following side.
+                None => true,
+                Some(v) => cur + off <= v,
+            },
+            SortDir::Desc => peer.is_some_and(|v| v <= cur - off),
+        },
+        // N .. M
+        (Some(f), Some(t)) => {
+            let (lo, hi) = match dir {
+                SortDir::Asc => (cur + f, cur + t),
+                SortDir::Desc => (cur - t, cur - f),
+            };
+            peer.is_some_and(|v| lo <= v && v <= hi)
+        }
+    }
+}
+
+fn cell_as_f64(cell: Option<&TypedCell>) -> Option<f64> {
+    match cell {
+        Some(TypedCell::Integer(i)) => Some(*i as f64),
+        Some(TypedCell::Float(f)) => Some(*f),
+        _ => None,
+    }
+}
+
+fn frame_offset_as_f64(offset: &FrameOffset) -> Option<f64> {
+    match offset {
+        FrameOffset::Unbounded => None,
+        FrameOffset::Int(i) => Some(*i as f64),
+        FrameOffset::Numeric(f) => Some(*f),
+    }
 }
 
 /// Low boundary index of `frame` for a row at `position` in a partition

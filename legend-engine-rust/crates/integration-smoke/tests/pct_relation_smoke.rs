@@ -1019,3 +1019,357 @@ fn pct_extend_testOLAPWithPartitionAndMultipleOrderWindowMultipleColumnsWithFilt
         "meta::pure::functions::relation::tests::extend::testOLAPWithPartitionAndMultipleOrderWindowMultipleColumnsWithFilter",
     );
 }
+
+// ---------------------------------------------------------------------------
+// PCT tests — numeric `_range` window frames (value-based, single sort col).
+// over.pure uses AggColSpec + assertEquals; reduce.pure uses the standalone
+// reduce + assertTdsEquivalent. RangeInterval (date+duration) is deferred.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_over_testRange_CurrentRow_UnboundedFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_CurrentRow_UnboundedFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_CurrentRow_UnboundedFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_CurrentRow_UnboundedFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_ExplicitOffsets_WithNullValues_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_ExplicitOffsets_WithNullValues_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_ExplicitOffsets_WithNullValues_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_ExplicitOffsets_WithNullValues_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NFollowing_NFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NFollowing_NFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NFollowing_NFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NFollowing_NFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NFollowing_UnboundedFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NFollowing_UnboundedFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NFollowing_UnboundedFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NFollowing_UnboundedFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NPreceding_NFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NPreceding_NFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NPreceding_NFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NPreceding_NFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NPreceding_NPreceding_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NPreceding_NPreceding_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NPreceding_NPreceding_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NPreceding_NPreceding_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NPreceding_UnboundedFollowing_WithNullValues_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NPreceding_UnboundedFollowing_WithNullValues_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NPreceding_UnboundedFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NPreceding_UnboundedFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_NPreceding_UnboundedFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_NPreceding_UnboundedFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_UnboundedPreceding_CurrentRow_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_UnboundedPreceding_CurrentRow_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_UnboundedPreceding_CurrentRow_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_UnboundedPreceding_CurrentRow_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_UnboundedPreceding_NFollowing_WithNullValues_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_UnboundedPreceding_NFollowing_WithNullValues_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_UnboundedPreceding_NFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_UnboundedPreceding_NFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_UnboundedPreceding_NFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_UnboundedPreceding_NFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_UnboundedPreceding_NPreceding_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_UnboundedPreceding_NPreceding_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_UnboundedPreceding_NPreceding_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_UnboundedPreceding_NPreceding_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_over_testRange_WithNumbers_CurrentRow_NFollowing_WithoutPartition_WithSingleOrderBy() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_WithNumbers_CurrentRow_NFollowing_WithoutPartition_WithSingleOrderBy",
+    );
+}
+
+// PURE-SIDE GAP: this is the only Range test mixing a Decimal frame
+// offset (`0.5d`) with a Float offset (`2.5`) in `_range(0.5d, 2.5)`.
+// The `over(_, _range)` boundary-validation in legend-pure-rust raises
+// "Cannot compare Decimal and Float" before our frame native runs — a
+// numeric mixed-type comparison gap, not a Range-frame issue (the
+// engine native handles the value range correctly; the other 23
+// numeric Range over.pure tests pass). Filed via scratch_5.txt.
+#[test]
+#[ignore = "pure-side: Decimal/Float mixed-offset comparison in _range boundary validation"]
+fn pct_over_testRange_WithNumbers_NFollowing_NFollowing_WithoutPartition_WithSingleOrderBy() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::over::testRange_WithNumbers_NFollowing_NFollowing_WithoutPartition_WithSingleOrderBy",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_CurrentRow_UnboundedFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_CurrentRow_UnboundedFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_CurrentRow_UnboundedFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_CurrentRow_UnboundedFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_ExplicitOffsets_WithNullValues_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_ExplicitOffsets_WithNullValues_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_ExplicitOffsets_WithNullValues_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_ExplicitOffsets_WithNullValues_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NFollowing_NFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NFollowing_NFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NFollowing_NFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NFollowing_NFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NFollowing_UnboundedFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NFollowing_UnboundedFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NFollowing_UnboundedFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NFollowing_UnboundedFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NPreceding_NFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NPreceding_NFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NPreceding_NFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NPreceding_NFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NPreceding_NPreceding_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NPreceding_NPreceding_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NPreceding_NPreceding_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NPreceding_NPreceding_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NPreceding_UnboundedFollowing_WithNullValues_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NPreceding_UnboundedFollowing_WithNullValues_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NPreceding_UnboundedFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NPreceding_UnboundedFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_NPreceding_UnboundedFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_NPreceding_UnboundedFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_UnboundedPreceding_CurrentRow_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_UnboundedPreceding_CurrentRow_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_UnboundedPreceding_CurrentRow_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_UnboundedPreceding_CurrentRow_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_UnboundedPreceding_NFollowing_WithNullValues_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_UnboundedPreceding_NFollowing_WithNullValues_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_UnboundedPreceding_NFollowing_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_UnboundedPreceding_NFollowing_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_UnboundedPreceding_NFollowing_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_UnboundedPreceding_NFollowing_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_UnboundedPreceding_NPreceding_WithSinglePartition_WithOrderByASC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_UnboundedPreceding_NPreceding_WithSinglePartition_WithOrderByASC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_UnboundedPreceding_NPreceding_WithSinglePartition_WithOrderByDESC() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_UnboundedPreceding_NPreceding_WithSinglePartition_WithOrderByDESC",
+    );
+}
+
+#[test]
+fn pct_reduce_testRange_WithNumbers_CurrentRow_NFollowing_WithoutPartition_WithSingleOrderBy() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_WithNumbers_CurrentRow_NFollowing_WithoutPartition_WithSingleOrderBy",
+    );
+}
+
+// PURE-SIDE GAP: same Decimal/Float mixed-offset `_range(0.5d, 2.5)`
+// comparison gap as the over.pure counterpart above.
+#[test]
+#[ignore = "pure-side: Decimal/Float mixed-offset comparison in _range boundary validation"]
+fn pct_reduce_testRange_WithNumbers_NFollowing_NFollowing_WithoutPartition_WithSingleOrderBy() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRange_WithNumbers_NFollowing_NFollowing_WithoutPartition_WithSingleOrderBy",
+    );
+}
+

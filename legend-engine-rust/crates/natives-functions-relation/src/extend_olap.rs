@@ -52,8 +52,8 @@ use legend_pure_runtime::native::relation::shared::{
 use legend_pure_runtime::value::Value;
 
 use crate::window_runtime::{
-    Frame, attach_row_index, effective_frame, frame_row_indices, partition_row_indices, push_flat,
-    read_frame, read_partition_cols, read_sort_keys, resolve_partition_indices,
+    Frame, SortDir, attach_row_index, effective_frame, frame_indices_for_row, partition_row_indices,
+    push_flat, read_frame, read_partition_cols, read_sort_keys, resolve_partition_indices,
     resolve_sort_indices, sort_partitions_in_place,
 };
 
@@ -90,6 +90,7 @@ fn compute_windowed_agg_column(
     partitions: &[(Vec<Option<TypedCell>>, Vec<usize>)],
     row_position: &[(usize, usize)],
     frame: Option<&Frame>,
+    sort_indices: &[(usize, SortDir)],
     map_fn: &Value,
     reduce_fn: &Value,
     rel_arg: &Value,
@@ -111,7 +112,8 @@ fn compute_windowed_agg_column(
     let mut cells: Vec<Option<TypedCell>> = Vec::with_capacity(parsed.rows.len());
     for src_idx in 0..parsed.rows.len() {
         let (p_idx, position) = row_position[src_idx];
-        let in_frame = frame_row_indices(&partitions[p_idx].1, position, frame);
+        let in_frame =
+            frame_indices_for_row(parsed, &partitions[p_idx].1, position, frame, sort_indices);
         let mut collection: PVector<Value> = PVector::new();
         for &i in &in_frame {
             push_flat(&mut collection, &map_values[i]);
@@ -242,6 +244,7 @@ impl NativeFunction for ExtendWindowAggColSpec {
             &partitions,
             &row_position,
             frame.as_ref(),
+            &sort_indices,
             &map_fn,
             &reduce_fn,
             &rel_arg,
@@ -330,6 +333,7 @@ impl NativeFunction for ExtendWindowAggColSpecArray {
                 &partitions,
                 &row_position,
                 frame.as_ref(),
+                &sort_indices,
                 map_fn,
                 reduce_fn,
                 &rel_arg,
