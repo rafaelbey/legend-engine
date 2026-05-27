@@ -29,6 +29,7 @@
 #![allow(clippy::needless_pass_by_value)]
 
 use im_rc::Vector as PVector;
+use legend_pure_parser_pure::ids::ElementId;
 use legend_pure_parser_pure::types::ValueSpec;
 
 use legend_pure_runtime::error::PureException;
@@ -37,6 +38,7 @@ use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, e
 use legend_pure_runtime::value::Value;
 
 use legend_pure_runtime::native::relation::shared::{read_parsed_tds, unwrap_instance_value};
+use legend_pure_runtime::relation::{alloc_multiplicity, column_type_element};
 
 /// Pure
 /// `columns<T>(rel:Relation<T>[1]):Column<T>[*]`.
@@ -55,15 +57,70 @@ impl NativeFunction for Columns {
         let tds_obj = unwrap_instance_value(&value, instance_value_id, ctx)?;
         let parsed = read_parsed_tds("columns", &tds_obj, ctx)?;
 
+        // Pre-resolve every element-id we need from the model before
+        // we touch the heap mutably — `EvalContextTrait` exposes
+        // `model()` and `heap_mut()` via `&self` / `&mut self`, so
+        // through the dyn trait Rust won't let us hold both refs at
+        // once. After this block, the loop body needs only `heap_mut`.
+        let column_class_value =
+            m3_paths::resolve(ctx.model(), m3_paths::COLUMN).map_or(Value::Unit, Value::Element);
+        let per_column_type_ids: Vec<ElementId> = parsed
+            .columns
+            .iter()
+            .map(|c| {
+                column_type_element(ctx.model(), &c.type_tag)
+                    .unwrap_or(legend_pure_parser_pure::bootstrap::ANY_ID)
+            })
+            .collect();
+
+        // Each Column heap object carries `name`, `nameWildCard`, and
+        // `classifierGenericType = ^GT(rawType=Column,
+        // typeArguments=[Unit, ^GT(rawType=<value-type>)],
+        // multiplicityArguments=[^Multiplicity(<mult>)])`. The
+        // classifierGenericType is what the `assertTdsEquivalent`
+        // reflection walk in `tdsEquivalent.pure:31` reads via
+        // `$col.classifierGenericType.typeArguments->at(1).rawType
+        //   ->toOne()->subTypeOf(Number)`. The shape mirrors
+        // `legend_pure_runtime::relation::alloc_column`; inlined here
+        // because that helper takes `&mut RuntimeHeap` and `&PureModel`
+        // simultaneously, which the dyn trait can't expose without
+        // `unsafe` (forbid(unsafe_code) on this crate).
         let mut out: PVector<Value> = PVector::new();
-        for col in &parsed.columns {
-            let column_obj = ctx.heap_mut().alloc_dynamic(m3_paths::COLUMN);
-            ctx.heap_mut()
-                .mutate_add(&column_obj, "name", &[Value::String(col.name.clone())])
+        for (col, &type_id) in parsed.columns.iter().zip(per_column_type_ids.iter()) {
+            let heap = ctx.heap_mut();
+            let mult_obj = alloc_multiplicity(heap, &col.multiplicity)?;
+
+            let inner_gt = heap.alloc_dynamic(m3_paths::GENERIC_TYPE);
+            heap.mutate_add(&inner_gt, "rawType", &[Value::Element(type_id)])
                 .map_err(PureException::from)?;
-            ctx.heap_mut()
-                .mutate_add(&column_obj, "nameWildCard", &[Value::Boolean(false)])
+
+            let outer_gt = heap.alloc_dynamic(m3_paths::GENERIC_TYPE);
+            heap.mutate_add(&outer_gt, "rawType", &[column_class_value.clone()])
                 .map_err(PureException::from)?;
+            heap.mutate_add(
+                &outer_gt,
+                "typeArguments",
+                &[Value::Unit, Value::Object(inner_gt)],
+            )
+            .map_err(PureException::from)?;
+            heap.mutate_add(
+                &outer_gt,
+                "multiplicityArguments",
+                &[Value::Object(mult_obj)],
+            )
+            .map_err(PureException::from)?;
+
+            let column_obj = heap.alloc_dynamic(m3_paths::COLUMN);
+            heap.mutate_add(&column_obj, "name", &[Value::String(col.name.clone())])
+                .map_err(PureException::from)?;
+            heap.mutate_add(&column_obj, "nameWildCard", &[Value::Boolean(false)])
+                .map_err(PureException::from)?;
+            heap.mutate_add(
+                &column_obj,
+                "classifierGenericType",
+                &[Value::Object(outer_gt)],
+            )
+            .map_err(PureException::from)?;
             out.push_back(Value::Object(column_obj));
         }
         Ok(Evaluated::new(Value::Collection(Box::new(out))))

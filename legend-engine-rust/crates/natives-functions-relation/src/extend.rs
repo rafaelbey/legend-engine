@@ -26,7 +26,7 @@
 
 #![allow(clippy::needless_pass_by_value)]
 
-use legend_pure_dsl_tds::csv::{ColumnType, ParsedColumn, TypedCell};
+use legend_pure_dsl_tds::csv::{ColumnType, ParsedColumn, ParsedTDS, TypedCell};
 use legend_pure_parser_pure::types::{ColSpecLiteralKind, ExprKind, Multiplicity, ValueSpec};
 use smol_str::SmolStr;
 
@@ -36,7 +36,7 @@ use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, e
 use legend_pure_runtime::value::Value;
 
 use legend_pure_runtime::native::relation::shared::{
-    build_row_tuple, read_parsed_tds, render_csv_from_columns_and_rows, unwrap_instance_value,
+    alloc_tds_from_parsed, build_row_tuple, read_parsed_tds, unwrap_instance_value,
 };
 
 /// `extend(Relation<T>[1], FuncColSpec<{T[1]->Any[0..1]},Z>[1])
@@ -113,11 +113,12 @@ impl NativeFunction for ExtendFuncColSpec {
             new_rows.push(extended);
         }
 
-        let new_csv = render_csv_from_columns_and_rows(&new_columns, &new_rows);
-        let new_tds = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
-            .map_err(PureException::from)?;
+        let result = ParsedTDS {
+            csv: String::new(),
+            columns: new_columns,
+            rows: new_rows,
+        };
+        let new_tds = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(new_tds)))
     }
 }
@@ -225,20 +226,21 @@ impl NativeFunction for ExtendFuncColSpecArray {
             new_rows.push(extended);
         }
 
-        let new_csv = render_csv_from_columns_and_rows(&new_columns, &new_rows);
-        let new_tds = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
-            .map_err(PureException::from)?;
+        let result = ParsedTDS {
+            csv: String::new(),
+            columns: new_columns,
+            rows: new_rows,
+        };
+        let new_tds = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(new_tds)))
     }
 }
 
-/// Convert a runtime [`Value`] into the [`TypedCell`] form
-/// `render_csv_from_columns_and_rows` consumes. `Unit` collapses to
-/// `None` (empty cell). `Object`, `Function`, `Element`, etc. are out
-/// of scope for the first FuncColSpec native — extend bodies in PCT
-/// tests produce scalar results.
+/// Convert a runtime [`Value`] (an extend body's per-row result) into a
+/// [`TypedCell`] for the new column. `Unit` collapses to `None` (empty
+/// cell). `Object`, `Function`, `Element`, etc. are out of scope for the
+/// first FuncColSpec native — extend bodies in PCT tests produce scalar
+/// results.
 fn value_to_typed_cell(value: &Value) -> Option<TypedCell> {
     match value {
         Value::Unit => None,

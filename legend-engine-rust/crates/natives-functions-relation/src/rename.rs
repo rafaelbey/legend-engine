@@ -17,7 +17,7 @@
 
 #![allow(clippy::needless_pass_by_value)]
 
-use legend_pure_dsl_tds::csv::ParsedColumn;
+use legend_pure_dsl_tds::csv::{ParsedColumn, ParsedTDS};
 use legend_pure_parser_pure::types::ValueSpec;
 use smol_str::SmolStr;
 
@@ -27,7 +27,9 @@ use legend_pure_runtime::m3_paths;
 use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, expect_args};
 use legend_pure_runtime::value::Value;
 
-use legend_pure_runtime::native::relation::shared::{read_parsed_tds, render_csv_from_columns_and_rows, unwrap_instance_value};
+use legend_pure_runtime::native::relation::shared::{
+    alloc_tds_from_parsed, read_parsed_tds, unwrap_instance_value,
+};
 
 /// Pure
 /// `rename<T,Z,K,V>(r:Relation<T>[1], old:ColSpec<Z=(?:K)⊆T>[1],
@@ -100,15 +102,16 @@ impl NativeFunction for Rename {
         }
 
         // -- Mutate the column entry in place ---------------------------
-        let mut updated_columns: Vec<ParsedColumn> = parsed.columns.clone();
+        let mut updated_columns: Vec<ParsedColumn> = parsed.columns;
         updated_columns[source_idx].name = to_name;
 
-        // -- Render and allocate fresh TDS ------------------------------
-        let csv = render_csv_from_columns_and_rows(&updated_columns, &parsed.rows);
-        let tds_handle = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&tds_handle, "csv", &[Value::String(csv.into())])
-            .map_err(PureException::from)?;
+        // -- Re-emit with the renamed column ----------------------------
+        let result = ParsedTDS {
+            csv: String::new(),
+            columns: updated_columns,
+            rows: parsed.rows,
+        };
+        let tds_handle = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(tds_handle)))
     }
 }

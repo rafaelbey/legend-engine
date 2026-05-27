@@ -38,7 +38,9 @@ use legend_pure_runtime::m3_paths;
 use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, expect_args};
 use legend_pure_runtime::value::Value;
 
-use legend_pure_runtime::native::relation::shared::{read_parsed_tds, unwrap_instance_value};
+use legend_pure_runtime::native::relation::shared::{
+    alloc_tds_from_parsed, read_parsed_tds, unwrap_instance_value,
+};
 
 /// `select<T>(r:Relation<T>[1]):Relation<T>[1]`.
 ///
@@ -60,14 +62,8 @@ impl NativeFunction for SelectAll {
         let rel_value = ctx.evaluate(&args[0])?.into_value();
         let tds_obj = unwrap_instance_value(&rel_value, instance_value_id, ctx)?;
         let parsed = read_parsed_tds("select", &tds_obj, ctx)?;
-        // Identity re-emit. Canonical CSV from the current parsed
-        // structure (so a no-op `select()` round-trips through the
-        // same normalisation any other relation native applies).
-        let new_csv = legend_pure_runtime::native::relation::shared::render_canonical_csv(&parsed);
-        let new_tds = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
-            .map_err(PureException::from)?;
+        // Identity re-emit — same rows + columns, fresh heap object.
+        let new_tds = alloc_tds_from_parsed(ctx, &parsed)?;
         Ok(Evaluated::new(Value::Object(new_tds)))
     }
 }
@@ -215,10 +211,6 @@ fn project_tds(
         columns: new_columns,
         rows: new_rows,
     };
-    let new_csv = legend_pure_runtime::native::relation::shared::render_canonical_csv(&projected);
-    let new_tds: ObjectHandle = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-    ctx.heap_mut()
-        .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
-        .map_err(PureException::from)?;
+    let new_tds: ObjectHandle = alloc_tds_from_parsed(ctx, &projected)?;
     Ok(Evaluated::new(Value::Object(new_tds)))
 }

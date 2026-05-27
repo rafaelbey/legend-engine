@@ -16,10 +16,12 @@
 //!
 //! Lambda-per-row template: invoke the predicate with `$x` bound to a
 //! synthetic heap object that carries the row's column values as named
-//! slots. Survivors are re-emitted as a fresh `TDS` whose `csv` slot
-//! preserves the original CSV's header line plus the (verbatim) data
-//! lines of surviving rows — no re-rendering, so quoting and inferred
-//! types match the input exactly.
+//! slots. Survivors are re-emitted as a fresh `TDS` carrying the
+//! surviving rows plus the *source* column metadata — the column types
+//! are carried forward verbatim (via [`alloc_tds_from_parsed`]'s
+//! `classifierGenericType`), never re-inferred, so a filtered subset
+//! can't shift a column's type (e.g. all-Integer rows surviving from a
+//! Float column stay Float).
 //!
 //! This is the row-binding template that `sort`, `extend`, `groupBy`,
 //! and any other lambda-per-row relation native will share.
@@ -33,7 +35,10 @@ use legend_pure_runtime::m3_paths;
 use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, expect_args};
 use legend_pure_runtime::value::Value;
 
-use legend_pure_runtime::native::relation::shared::{build_row_tuple, read_parsed_tds, unwrap_instance_value};
+use legend_pure_dsl_tds::csv::ParsedTDS;
+use legend_pure_runtime::native::relation::shared::{
+    alloc_tds_from_parsed, build_row_tuple, read_parsed_tds, unwrap_instance_value,
+};
 
 /// Pure
 /// `filter<T>(rel:Relation<T>[1], f:Function<{T[1]→Boolean[1]}>[1])
@@ -48,17 +53,16 @@ use legend_pure_runtime::native::relation::shared::{build_row_tuple, read_parsed
 ///    `$x.col` returns `Value::Unit` — matching `[0..1]` semantics.
 /// 3. Invoke the lambda via `ctx.call_function(&f, &[row_tuple])` and
 ///    coerce the result to `Boolean`.
-/// 4. Collect surviving row indices, reconstruct a CSV by slicing the
-///    original CSV's lines (header + surviving data lines), and
-///    allocate a fresh `TDS` heap instance with that CSV.
+/// 4. Collect surviving rows and re-emit them as a fresh `TDS` via
+///    [`alloc_tds_from_parsed`], carrying the *source* column metadata
+///    forward unchanged.
 ///
-/// CSV reconstruction by line-slicing (not re-rendering typed cells)
-/// preserves the original quoting/escaping shape, so a subsequent
-/// `read_parsed_tds` re-derives equivalent inferred types and cell
-/// values. Re-rendering would lose quote-style information (`'…'` vs
-/// `"…"`) and could shift inferred column types when the filtered
-/// subset's data narrows the inference (e.g. all-Integer rows
-/// surviving from a Float column).
+/// Carrying the source columns forward (rather than re-inferring from
+/// the surviving subset) is what keeps a column's type stable: a filter
+/// that leaves only whole-numbered rows of a `Float` column must not
+/// re-classify it as `Integer`. The row cells are already typed
+/// ([`read_parsed_tds`] materialised them), so no CSV round-trip is
+/// involved.
 #[derive(Debug)]
 pub struct Filter;
 
@@ -89,35 +93,15 @@ impl NativeFunction for Filter {
             }
         }
 
-        // -- Reconstruct CSV by line-slicing -----------------------------
-        let new_csv = slice_csv_by_rows(parsed.csv.as_str(), &survivors);
-
-        // -- Allocate the fresh TDS --------------------------------------
-        let new_tds = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
-            .map_err(PureException::from)?;
+        // -- Re-emit the surviving rows ----------------------------------
+        // Carry the source columns forward unchanged (types preserved).
+        let kept_rows: Vec<_> = survivors.iter().map(|&i| parsed.rows[i].clone()).collect();
+        let result = ParsedTDS {
+            csv: String::new(),
+            columns: parsed.columns,
+            rows: kept_rows,
+        };
+        let new_tds = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(new_tds)))
     }
-}
-
-/// Slice the original CSV body to retain only the header line plus
-/// the data lines whose 0-based index is in `surviving_row_indices`
-/// (in ascending order). Joins the kept lines with `\n`, matching the
-/// shape `read_parsed_tds` re-parses.
-fn slice_csv_by_rows(csv: &str, surviving_row_indices: &[usize]) -> String {
-    let trimmed = csv.trim_matches(|c: char| c == '\n' || c == '\r');
-    let mut iter = trimmed.split('\n');
-    let header = iter.next().unwrap_or("");
-    let data_lines: Vec<&str> = iter.collect();
-
-    let mut out = String::with_capacity(trimmed.len());
-    out.push_str(header);
-    for &idx in surviving_row_indices {
-        if let Some(line) = data_lines.get(idx) {
-            out.push('\n');
-            out.push_str(line);
-        }
-    }
-    out
 }

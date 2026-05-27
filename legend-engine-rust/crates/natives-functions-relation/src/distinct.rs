@@ -25,7 +25,9 @@ use legend_pure_runtime::m3_paths;
 use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, expect_args};
 use legend_pure_runtime::value::Value;
 
-use legend_pure_runtime::native::relation::shared::{read_parsed_tds, render_canonical_csv, unwrap_instance_value};
+use legend_pure_runtime::native::relation::shared::{
+    alloc_tds_from_parsed, read_parsed_tds, unwrap_instance_value,
+};
 
 /// Pure
 /// `distinct<T>(rel:Relation<T>[1]):Relation<T>[1]`.
@@ -69,11 +71,7 @@ impl NativeFunction for Distinct {
             columns: parsed.columns.clone(),
             rows: deduped,
         };
-        let new_csv = render_canonical_csv(&result);
-        let tds_handle = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&tds_handle, "csv", &[Value::String(new_csv.into())])
-            .map_err(PureException::from)?;
+        let tds_handle = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(tds_handle)))
     }
 }
@@ -165,11 +163,7 @@ impl NativeFunction for DistinctColSpecArray {
             columns: new_columns,
             rows: deduped,
         };
-        let new_csv = render_canonical_csv(&result);
-        let tds_handle = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&tds_handle, "csv", &[Value::String(new_csv.into())])
-            .map_err(PureException::from)?;
+        let tds_handle = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(tds_handle)))
     }
 }

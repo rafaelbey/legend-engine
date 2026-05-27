@@ -692,3 +692,132 @@ fn pct_over_testRows_UnboundedPreceding_CurrentRow_WithMultiplePartitions_WithSi
         "meta::pure::functions::relation::tests::over::testRows_UnboundedPreceding_CurrentRow_WithMultiplePartitions_WithSingleOrderBy",
     );
 }
+
+// ---------------------------------------------------------------------------
+// PCT tests — OLAP `reduce` (standalone reduce inside extend(_,_Window,FuncColSpec))
+//
+// Each test uses `extend(over(~p, sortInfo, frame),
+//     ~newCol:{p,w,r|reduce($p, $w, $r, mapFn, aggFn)})`,
+// then `assertTdsEquivalent($expected, $res->sort(...), 0.00001)`.
+// The path now works because:
+//   * `find_by_prefix` prefers `map_T_*` over `map_Relation_*` (the
+//     legend-pure-rust fix in commit 24df3f16a46), so the `.name`
+//     auto-map inside tdsEquivalent dispatches to platform map.
+//   * `Column.classifierGenericType` is populated by the refactored
+//     `Columns` native using `legend_pure_runtime::relation::
+//     alloc_multiplicity` + the canonical Column shape — the
+//     reflection walk `$col.classifierGenericType.typeArguments
+//     ->at(1).rawType->toOne()->subTypeOf(Number)` resolves.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_reduce_testRows_UnboundedPreceding_CurrentRow() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_UnboundedPreceding_CurrentRow",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_CurrentRow_UnboundedFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_CurrentRow_UnboundedFollowing",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_UnboundedPreceding_UnboundedFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_UnboundedPreceding_UnboundedFollowing",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_NPreceding_NPreceding() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_NPreceding_NPreceding",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_NPreceding_NFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_NPreceding_NFollowing",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_NFollowing_NFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_NFollowing_NFollowing",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_UnboundedPreceding_NPreceding() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_UnboundedPreceding_NPreceding",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_UnboundedPreceding_NFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_UnboundedPreceding_NFollowing",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_NPreceding_UnboundedFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_NPreceding_UnboundedFollowing",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_NFollowing_UnboundedFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_NFollowing_UnboundedFollowing",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_CurrentRow_CurrentRow() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_CurrentRow_CurrentRow",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_NPreceding_CurrentRow() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_NPreceding_CurrentRow",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_CurrentRow_NFollowing() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_CurrentRow_NFollowing",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_UnboundedPreceding_UnboundedFollowing_WithSinglePartition_WithoutOrderBy() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_UnboundedPreceding_UnboundedFollowing_WithSinglePartition_WithoutOrderBy",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_UnboundedPreceding_UnboundedFollowing_WithMultiplePartitions_WithoutOrderBy() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_UnboundedPreceding_UnboundedFollowing_WithMultiplePartitions_WithoutOrderBy",
+    );
+}
+
+#[test]
+fn pct_reduce_testRows_UnboundedPreceding_CurrentRow_WithMultiplePartitions_WithSingleOrderBy() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::reduce::testRows_UnboundedPreceding_CurrentRow_WithMultiplePartitions_WithSingleOrderBy",
+    );
+}

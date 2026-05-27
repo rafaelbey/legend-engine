@@ -128,11 +128,20 @@ impl NativeFunction for Reduce {
         }
 
         // -- agg --------------------------------------------------------
+        // Empty in-frame (no rows, or every map output was Unit) ->
+        // emit `Unit` without calling `agg`. Mirrors
+        // `AggregationShared.processAggregation` in Java Pure: when the
+        // aggregation collection is empty, the result slot is null
+        // rather than `reduce(empty)` (which for `plus` would
+        // synthesise 0, for `joinStrings` would produce ""). The PCT
+        // corpus expects null in both cases.
+        if v_values.is_empty() {
+            return Ok(Evaluated::new(Value::Unit));
+        }
         // Pure: `agg : Function<{V[*]->U[m]}>` — pass the V collection
-        // as a single arg (Collection, scalar, or Unit for empty).
-        let agg_arg = if v_values.is_empty() {
-            Value::Unit
-        } else if v_values.len() == 1 {
+        // as a single arg (Collection, or scalar for the degenerate
+        // 1-element case).
+        let agg_arg = if v_values.len() == 1 {
             v_values.iter().next().cloned().unwrap_or(Value::Unit)
         } else {
             Value::Collection(Box::new(v_values))

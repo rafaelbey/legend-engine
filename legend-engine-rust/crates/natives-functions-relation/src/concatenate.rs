@@ -29,7 +29,11 @@ use legend_pure_runtime::m3_paths;
 use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, expect_args};
 use legend_pure_runtime::value::Value;
 
-use legend_pure_runtime::native::relation::shared::{read_parsed_tds, render_csv_from_columns_and_rows, unwrap_instance_value};
+use legend_pure_dsl_tds::csv::{ParsedColumn, ParsedTDS};
+use legend_pure_parser_pure::types::Multiplicity;
+use legend_pure_runtime::native::relation::shared::{
+    alloc_tds_from_parsed, read_parsed_tds, unwrap_instance_value,
+};
 
 /// Pure
 /// `concatenate<T>(rel1:Relation<T>[1], rel2:Relation<T>[1]):Relation<T>[1]`.
@@ -37,12 +41,11 @@ use legend_pure_runtime::native::relation::shared::{read_parsed_tds, render_csv_
 /// Validates that the two relations have a compatible schema (same
 /// column count, identical column names in order, identical
 /// [`ColumnType`](legend_pure_dsl_tds::csv::ColumnType) per column) and
-/// returns a new TDS whose rows are `rel1.rows ++ rel2.rows`. The
-/// canonical CSV of the result is rendered from `rel1`'s column header
-/// followed by the concatenated row data; reparsing it via
-/// `parse_and_infer` yields a `ParsedTDS` with the unioned data and
-/// possibly relaxed multiplicities (e.g. `[1]` → `[0..1]` if the
-/// concatenation introduces nulls).
+/// returns a new TDS whose rows are `rel1.rows ++ rel2.rows`. Column
+/// types are carried forward unchanged; per-column multiplicity is the
+/// *widening* of the two inputs (`[1]` only when both sides are `[1]`,
+/// otherwise `[0..1]`) — so concatenating a `[1]` column with a `[0..1]`
+/// column relaxes the result to `[0..1]`.
 #[derive(Debug)]
 pub struct Concatenate;
 
@@ -100,11 +103,32 @@ impl NativeFunction for Concatenate {
         rows.extend(p1.rows.iter().cloned());
         rows.extend(p2.rows.iter().cloned());
 
-        let new_csv = render_csv_from_columns_and_rows(&p1.columns, &rows);
-        let tds_handle = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&tds_handle, "csv", &[Value::String(new_csv.into())])
-            .map_err(PureException::from)?;
+        // Carry types forward; widen multiplicity per column (equal →
+        // keep, differ → `[0..1]`).
+        let columns: Vec<ParsedColumn> = p1
+            .columns
+            .iter()
+            .zip(p2.columns.iter())
+            .map(|(l, r)| {
+                let multiplicity = if l.multiplicity == r.multiplicity {
+                    l.multiplicity.clone()
+                } else {
+                    Multiplicity::ZeroOrOne
+                };
+                ParsedColumn {
+                    name: l.name.clone(),
+                    type_tag: l.type_tag.clone(),
+                    multiplicity,
+                }
+            })
+            .collect();
+
+        let result = ParsedTDS {
+            csv: String::new(),
+            columns,
+            rows,
+        };
+        let tds_handle = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(tds_handle)))
     }
 }

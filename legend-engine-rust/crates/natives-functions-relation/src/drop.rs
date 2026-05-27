@@ -24,7 +24,10 @@ use legend_pure_runtime::m3_paths;
 use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, expect_args};
 use legend_pure_runtime::value::Value;
 
-use legend_pure_runtime::native::relation::shared::{read_parsed_tds, render_csv_from_columns_and_rows, unwrap_instance_value};
+use legend_pure_dsl_tds::csv::ParsedTDS;
+use legend_pure_runtime::native::relation::shared::{
+    alloc_tds_from_parsed, read_parsed_tds, unwrap_instance_value,
+};
 
 /// Pure
 /// `drop<T>(rel:Relation<T>[1], size:Integer[1]):Relation<T>[1]`.
@@ -35,10 +38,9 @@ use legend_pure_runtime::native::relation::shared::{read_parsed_tds, render_csv_
 /// platform-side handling exercised by `<<PCT.test>>` in
 /// `slice/drop.pure`.
 ///
-/// Reparses the input via [`read_parsed_tds`], slices off the leading
-/// rows, and emits a canonical CSV via the shared
-/// [`render_csv_from_columns_and_rows`] helper (the same path
-/// `concatenate` uses).
+/// Reads the input via [`read_parsed_tds`], slices off the leading
+/// rows, and re-emits the remaining rows + source column metadata as a
+/// fresh `TDS` via [`alloc_tds_from_parsed`].
 #[derive(Debug)]
 pub struct Drop;
 
@@ -67,12 +69,12 @@ impl NativeFunction for Drop {
 
         let kept: Vec<Vec<Option<legend_pure_dsl_tds::csv::TypedCell>>> =
             parsed.rows[skip..].to_vec();
-        let csv = render_csv_from_columns_and_rows(&parsed.columns, &kept);
-
-        let tds_handle = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&tds_handle, "csv", &[Value::String(csv.into())])
-            .map_err(PureException::from)?;
+        let result = ParsedTDS {
+            csv: String::new(),
+            columns: parsed.columns,
+            rows: kept,
+        };
+        let tds_handle = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(tds_handle)))
     }
 }

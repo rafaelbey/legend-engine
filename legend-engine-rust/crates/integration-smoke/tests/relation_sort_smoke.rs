@@ -18,7 +18,8 @@
 //! Each test compiles a small synthetic Pure source against the embedded
 //! `core_functions_*` corpus, evaluates a function that returns either
 //! the sorted relation's row count (via `size`) or its canonical CSV
-//! (via the `TDS.csv` slot read), and asserts on the returned value.
+//! (via the derived `TDS.csv()` qualified property), and asserts on the
+//! returned value.
 //!
 //! The asserted CSV is what the runtime's
 //! `render_csv_from_columns_and_rows` helper emits — `, `-separated
@@ -174,7 +175,7 @@ function relation_sort_probe::sortAscSize(): Integer[1]
 }
 
 // ---------------------------------------------------------------------------
-// Canonical-CSV probes — read `$result.csv` directly.
+// Canonical-CSV probes — read `$result.csv()` (the derived QP).
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -190,7 +191,7 @@ function relation_sort_probe::sortAscCsv(): String[1]
        1
        2
     #;
-    $r->sort(ascending(~val)).csv
+    $r->sort(ascending(~val)).csv()
 }";
     let result = eval_function(
         "sort_asc_csv.pure",
@@ -213,7 +214,7 @@ function relation_sort_probe::sortDescCsv(): String[1]
        1
        2
     #;
-    $r->sort(descending(~val)).csv
+    $r->sort(descending(~val)).csv()
 }";
     let result = eval_function(
         "sort_desc_csv.pure",
@@ -241,7 +242,7 @@ function relation_sort_probe::sortMultiKeyCsv(): String[1]
        1, Anna
        2, Alex
     #;
-    $r->sort([ascending(~id), descending(~name)]).csv
+    $r->sort([ascending(~id), descending(~name)]).csv()
 }";
     let result = eval_function(
         "sort_multi_key.pure",
@@ -281,7 +282,7 @@ function relation_sort_probe::pctSortShared(): String[1]
        4, Alex
        2, Thierry
     #;
-    $r->sort([descending(~id), ascending(~name)]).csv
+    $r->sort([descending(~id), ascending(~name)]).csv()
 }";
     let result = eval_function(
         "sort_pct_corpus.pure",

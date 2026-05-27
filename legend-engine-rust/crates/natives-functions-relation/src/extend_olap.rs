@@ -38,7 +38,7 @@
 #![allow(clippy::needless_pass_by_value)]
 
 use im_rc::Vector as PVector;
-use legend_pure_dsl_tds::csv::{ColumnType, ParsedColumn, TypedCell};
+use legend_pure_dsl_tds::csv::{ColumnType, ParsedColumn, ParsedTDS, TypedCell};
 use legend_pure_parser_pure::types::{Multiplicity, ValueSpec};
 use smol_str::SmolStr;
 
@@ -46,7 +46,7 @@ use legend_pure_runtime::error::{PureException, PureRuntimeError};
 use legend_pure_runtime::m3_paths;
 use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, expect_args};
 use legend_pure_runtime::native::relation::shared::{
-    build_row_tuple, read_parsed_tds, render_csv_from_columns_and_rows, unwrap_instance_value,
+    alloc_tds_from_parsed, build_row_tuple, read_parsed_tds, unwrap_instance_value,
 };
 use legend_pure_runtime::value::Value;
 
@@ -201,11 +201,12 @@ impl NativeFunction for ExtendWindowAggColSpec {
             new_rows.push(extended);
         }
 
-        let new_csv = render_csv_from_columns_and_rows(&new_columns, &new_rows);
-        let new_tds = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
-            .map_err(PureException::from)?;
+        let result = ParsedTDS {
+            csv: String::new(),
+            columns: new_columns,
+            rows: new_rows,
+        };
+        let new_tds = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(new_tds)))
     }
 }
@@ -290,11 +291,12 @@ impl NativeFunction for ExtendWindowFuncColSpec {
             new_rows.push(extended);
         }
 
-        let new_csv = render_csv_from_columns_and_rows(&new_columns, &new_rows);
-        let new_tds = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&new_tds, "csv", &[Value::String(new_csv.into())])
-            .map_err(PureException::from)?;
+        let result = ParsedTDS {
+            csv: String::new(),
+            columns: new_columns,
+            rows: new_rows,
+        };
+        let new_tds = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(new_tds)))
     }
 }

@@ -42,7 +42,7 @@ use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, e
 use legend_pure_runtime::value::Value;
 
 use legend_pure_runtime::native::relation::shared::{
-    read_parsed_tds, render_csv_from_columns_and_rows, single_object_slot, unwrap_instance_value,
+    alloc_tds_from_parsed, read_parsed_tds, single_object_slot, unwrap_instance_value,
 };
 
 /// Pure `sort<X,T>(rel:Relation<T>[1], sortInfo:SortInfo<X⊆T>[*]):Relation<T>[1]`.
@@ -83,14 +83,13 @@ impl NativeFunction for Sort {
         let mut sorted = parsed.rows.clone();
         sorted.sort_by(|a, b| compare_rows(a, b, &keys));
 
-        // -- Reconstruct CSV --------------------------------------------
-        let new_csv = render_csv_from_columns_and_rows(&parsed.columns, &sorted);
-
-        // -- Allocate the fresh TDS --------------------------------------
-        let tds_handle = ctx.heap_mut().alloc_dynamic(m3_paths::TDS);
-        ctx.heap_mut()
-            .mutate_add(&tds_handle, "csv", &[Value::String(new_csv.into())])
-            .map_err(PureException::from)?;
+        // -- Re-emit the reordered rows ----------------------------------
+        let result = ParsedTDS {
+            csv: String::new(),
+            columns: parsed.columns,
+            rows: sorted,
+        };
+        let tds_handle = alloc_tds_from_parsed(ctx, &result)?;
         Ok(Evaluated::new(Value::Object(tds_handle)))
     }
 }
