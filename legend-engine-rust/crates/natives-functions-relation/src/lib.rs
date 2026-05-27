@@ -78,7 +78,10 @@ pub use descending::Descending;
 pub use distinct::{Distinct, DistinctColSpecArray};
 pub use drop::Drop;
 pub use extend::{ExtendFuncColSpec, ExtendFuncColSpecArray};
-pub use extend_olap::{ExtendWindowAggColSpec, ExtendWindowFuncColSpec};
+pub use extend_olap::{
+    ExtendWindowAggColSpec, ExtendWindowAggColSpecArray, ExtendWindowFuncColSpec,
+    ExtendWindowFuncColSpecArray,
+};
 pub use filter::Filter;
 pub use limit::Limit;
 pub use map::MapRelation;
@@ -143,8 +146,16 @@ impl RuntimeExtension for RelationFunctionsExtension {
             ExtendWindowFuncColSpec,
         );
         registry.register(
+            "extend_Relation_1___Window_1__FuncColSpecArray_1__Relation_1_",
+            ExtendWindowFuncColSpecArray,
+        );
+        registry.register(
             "extend_Relation_1___Window_1__AggColSpec_1__Relation_1_",
             ExtendWindowAggColSpec,
+        );
+        registry.register(
+            "extend_Relation_1___Window_1__AggColSpecArray_1__Relation_1_",
+            ExtendWindowAggColSpecArray,
         );
         registry.register(
             "reduce_Relation_1___Window_1__T_1__Function_1__Function_1__U_m_",

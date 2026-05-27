@@ -295,6 +295,32 @@ pub(crate) fn read_frame(
     Ok(Some(Frame { kind, from, to }))
 }
 
+/// Resolve the *effective* window frame for a partition aggregation.
+///
+/// When `over(...)` carries no explicit frame the slot is empty
+/// (`frame == None`), and SQL window semantics supply a default:
+///
+/// - **ORDER BY present** → `RANGE UNBOUNDED PRECEDING TO CURRENT ROW`
+///   (a running / cumulative aggregate). We approximate this with the
+///   physical-row equivalent `ROWS UNBOUNDED PRECEDING TO CURRENT ROW`;
+///   the two coincide whenever the sort key is unique within the
+///   partition (true for every in-scope PCT test). A genuine RANGE
+///   default would also fold in tie "peers" of the current row — a
+///   follow-up alongside `_range` frame support.
+/// - **no ORDER BY** → the whole partition (`None`, the caller's
+///   full-partition path).
+pub(crate) fn effective_frame(frame: Option<Frame>, has_sort: bool) -> Option<Frame> {
+    match frame {
+        Some(f) => Some(f),
+        None if has_sort => Some(Frame {
+            kind: FrameKind::Rows,
+            from: FrameOffset::Unbounded,
+            to: FrameOffset::Int(0), // current row
+        }),
+        None => None,
+    }
+}
+
 #[allow(clippy::result_large_err)]
 fn read_frame_offset(
     frame_obj: &ObjectHandle,

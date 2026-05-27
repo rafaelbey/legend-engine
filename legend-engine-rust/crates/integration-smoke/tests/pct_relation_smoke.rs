@@ -876,3 +876,37 @@ fn pct_ntile_testOLAPWithPartitionAndOrderNTile() {
         "meta::pure::functions::relation::tests::ntile::testOLAPWithPartitionAndOrderNTile",
     );
 }
+
+// ---------------------------------------------------------------------------
+// PCT tests — OLAP multi-column aggregate window
+// (`extend(over(...), ~[name:map:reduce, name:map:reduce])` →
+//  AggColSpecArray window variant).
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pct_extend_testOLAPAggWithPartitionWindowMultipleColumns() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testOLAPAggWithPartitionWindowMultipleColumns",
+    );
+}
+
+#[test]
+fn pct_extend_testOLAPAggWithPartitionWindowMultipleColumns_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testOLAPAggWithPartitionWindowMultipleColumns_MultipleExpressions",
+    );
+}
+
+#[test]
+fn pct_extend_testOLAPAggWithPartitionAndOrderWindowMultipleColumns() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testOLAPAggWithPartitionAndOrderWindowMultipleColumns",
+    );
+}
+
+#[test]
+fn pct_extend_testOLAPAggWithPartitionAndOrderWindowMultipleColumns_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::extend::testOLAPAggWithPartitionAndOrderWindowMultipleColumns_MultipleExpressions",
+    );
+}

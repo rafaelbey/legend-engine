@@ -52,9 +52,9 @@ use legend_pure_runtime::native::{EvalContextTrait, Evaluated, NativeFunction, e
 use legend_pure_runtime::value::Value;
 
 use crate::window_runtime::{
-    frame_row_indices, partition_row_indices, push_flat, read_frame, read_partition_cols,
-    read_row_index, read_sort_keys, resolve_partition_indices, resolve_sort_indices,
-    row_tuple_to_source_index, sort_partitions_in_place,
+    effective_frame, frame_row_indices, partition_row_indices, push_flat, read_frame,
+    read_partition_cols, read_row_index, read_sort_keys, resolve_partition_indices,
+    resolve_sort_indices, row_tuple_to_source_index, sort_partitions_in_place,
 };
 
 /// Pure `reduce<T,V,U|m>(rel:Relation<T>, w:_Window<T>, row:T, map, agg):U[m]`.
@@ -79,7 +79,10 @@ impl NativeFunction for Reduce {
         let window_obj = unwrap_instance_value(&window_value, instance_value_id, ctx)?;
         let partition_cols = read_partition_cols(&window_obj, ctx)?;
         let sort_keys = read_sort_keys(&window_obj, ctx)?;
-        let frame = read_frame(&window_obj, ctx)?;
+        // No explicit frame + ORDER BY -> default to a running frame
+        // (UNBOUNDED PRECEDING .. CURRENT ROW); no ORDER BY -> full
+        // partition. Matches SQL window-default semantics.
+        let frame = effective_frame(read_frame(&window_obj, ctx)?, !sort_keys.is_empty());
 
         let row_value = ctx.evaluate(&args[2])?.into_value();
         let row_obj = unwrap_instance_value(&row_value, instance_value_id, ctx)?;
