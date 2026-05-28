@@ -188,3 +188,66 @@ function olap_probe::joinNames(): String[1]
     let expected = "#TDS\n   grp,name,combined\n   1,alice,alice,bob\n   1,bob,alice,bob\n   2,carol,carol,dan\n   2,dan,carol,dan\n#";
     assert_eq!(s, expected, "OLAP extend joinStrings-per-partition mismatch");
 }
+
+/// `groupBy(~grp, ~total:x|$x.val:y|$y->plus())` — collapse to one row
+/// per `grp`, summing `val`. Result schema is `[grp, total]` (group col
+/// + agg col), one row per group in first-occurrence order. Asserts the
+/// collapsed TDS directly (no `chunk`, which the PCT tests use for
+/// order-normalisation but isn't yet a runtime native — see scratch_5).
+#[test]
+fn group_by_single_single_sum() {
+    let source = r"###Pure
+import meta::pure::functions::relation::*;
+
+function olap_probe::groupBySum(): String[1]
+{
+    let r = #TDS
+       grp, val
+       1,   10
+       1,   20
+       2,   30
+       2,   40
+       2,   50
+       3,   100
+    #;
+    $r->groupBy(~grp, ~total : x | $x.val : y | $y->plus())->sort(~grp->ascending())->toString()
+}";
+    let result = eval_function("group_by_sum.pure", source, &["olap_probe", "groupBySum"]);
+    let s = match &result {
+        Value::String(s) => s.to_string(),
+        other => panic!("expected String, got {other:?}"),
+    };
+    let expected = "#TDS\n   grp,total\n   1,30\n   2,120\n   3,100\n#";
+    assert_eq!(s, expected, "groupBy single/single sum mismatch");
+}
+
+/// `groupBy(~[grp, grp2], ~[sumVal:..., cnt:...])` — multi group cols +
+/// multi aggregates (the ColSpecArray x AggColSpecArray overload).
+#[test]
+fn group_by_multiple_multiple() {
+    let source = r"###Pure
+import meta::pure::functions::relation::*;
+
+function olap_probe::groupByMulti(): String[1]
+{
+    let r = #TDS
+       grp, grp2, val
+       1,   9,    10
+       1,   9,    20
+       1,   8,    5
+       2,   7,    30
+       2,   7,    40
+    #;
+    $r->groupBy(~[grp, grp2], ~[sumVal : x | $x.val : y | $y->plus(), cnt : x | $x.val : y | $y->count()])
+      ->sort([~grp->ascending(), ~grp2->ascending()])->toString()
+}";
+    let result = eval_function("group_by_multi.pure", source, &["olap_probe", "groupByMulti"]);
+    let s = match &result {
+        Value::String(s) => s.to_string(),
+        other => panic!("expected String, got {other:?}"),
+    };
+    // grp=1,grp2=8 -> [5,1]; grp=1,grp2=9 -> [30,2]; grp=2,grp2=7 -> [70,2]
+    let expected =
+        "#TDS\n   grp,grp2,sumVal,cnt\n   1,8,5,1\n   1,9,30,2\n   2,7,70,2\n#";
+    assert_eq!(s, expected, "groupBy multiple/multiple mismatch");
+}

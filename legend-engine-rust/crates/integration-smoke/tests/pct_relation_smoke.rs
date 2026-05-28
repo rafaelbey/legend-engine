@@ -1369,3 +1369,77 @@ fn pct_reduce_testRange_WithNumbers_NFollowing_NFollowing_WithoutPartition_WithS
     );
 }
 
+
+// ---------------------------------------------------------------------------
+// PCT tests — `groupBy` (collapse to one row per group key). Four
+// overloads: {ColSpec, ColSpecArray} group cols x {AggColSpec,
+// AggColSpecArray} aggregates. IGNORED: the assertions normalise
+// group order via `chunk(String,Integer)`, a platform string native
+// not yet in the runtime — NOT a groupBy gap (the native is verified
+// directly in olap_extend_smoke::group_by_*). Filed in scratch_5.
+// ---------------------------------------------------------------------------
+
+#[test]
+#[ignore = "blocked on platform `chunk(String,Integer)` native (test order-normalisation), not groupBy; see scratch_5"]
+fn pct_groupBy_testSimpleGroupBy_SingleSingle() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::groupBy::testSimpleGroupBy_SingleSingle",
+    );
+}
+
+#[test]
+#[ignore = "blocked on platform `chunk(String,Integer)` native (test order-normalisation), not groupBy; see scratch_5"]
+fn pct_groupBy_testSimpleGroupBy_SingleSingle_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::groupBy::testSimpleGroupBy_SingleSingle_MultipleExpressions",
+    );
+}
+
+#[test]
+#[ignore = "blocked on platform `chunk(String,Integer)` native (test order-normalisation), not groupBy; see scratch_5"]
+fn pct_groupBy_testSimpleGroupBy_MultipleSingle() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::groupBy::testSimpleGroupBy_MultipleSingle",
+    );
+}
+
+#[test]
+#[ignore = "blocked on platform `chunk(String,Integer)` native (test order-normalisation), not groupBy; see scratch_5"]
+fn pct_groupBy_testSimpleGroupBy_MultipleSingle_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::groupBy::testSimpleGroupBy_MultipleSingle_MultipleExpressions",
+    );
+}
+
+#[test]
+#[ignore = "blocked on platform `chunk(String,Integer)` native (test order-normalisation), not groupBy; see scratch_5"]
+fn pct_groupBy_testSimpleGroupBy_SingleMultiple() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::groupBy::testSimpleGroupBy_SingleMultiple",
+    );
+}
+
+#[test]
+#[ignore = "blocked on platform `chunk(String,Integer)` native (test order-normalisation), not groupBy; see scratch_5"]
+fn pct_groupBy_testSimpleGroupBy_SingleMultiple_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::groupBy::testSimpleGroupBy_SingleMultiple_MultipleExpressions",
+    );
+}
+
+#[test]
+#[ignore = "blocked on platform `chunk(String,Integer)` native (test order-normalisation), not groupBy; see scratch_5"]
+fn pct_groupBy_testSimpleGroupBy_MultipleMultiple() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::groupBy::testSimpleGroupBy_MultipleMultiple",
+    );
+}
+
+#[test]
+#[ignore = "blocked on platform `chunk(String,Integer)` native (test order-normalisation), not groupBy; see scratch_5"]
+fn pct_groupBy_testSimpleGroupBy_MultipleMultiple_MultipleExpressions() {
+    run_pct_test(
+        "meta::pure::functions::relation::tests::groupBy::testSimpleGroupBy_MultipleMultiple_MultipleExpressions",
+    );
+}
+
