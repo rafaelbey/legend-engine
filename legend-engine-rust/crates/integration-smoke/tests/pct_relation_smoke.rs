@@ -1443,3 +1443,43 @@ fn pct_groupBy_testSimpleGroupBy_MultipleMultiple_MultipleExpressions() {
     );
 }
 
+
+// ---------------------------------------------------------------------------
+// PCT tests — `join` (nested-loop, INNER/LEFT/RIGHT/FULL). IGNORED: every
+// join test's source TDS carries multi-word unquoted cells (`More George
+// 1`, `More David`), which the TDS island-grammar parser strips to
+// `MoreGeorge1` — a pure-side whitespace bug, NOT a join gap. The join
+// native is verified directly across all four kinds in
+// olap_extend_smoke::join_all_kinds_single_word. Filed in scratch_5.
+// ---------------------------------------------------------------------------
+
+#[test]
+#[ignore = "pure-side: TDS island-grammar strips internal whitespace from unquoted cells"]
+fn pct_join_testSimpleJoinShared() {
+    run_pct_test("meta::pure::functions::relation::tests::join::testSimpleJoinShared");
+}
+
+#[test]
+#[ignore = "pure-side: TDS island-grammar strips internal whitespace from unquoted cells"]
+fn pct_join_testSimpleJoin_MultipleExpressions() {
+    run_pct_test("meta::pure::functions::relation::tests::join::testSimpleJoin_MultipleExpressions");
+}
+
+#[test]
+#[ignore = "pure-side: TDS island-grammar strips internal whitespace from unquoted cells"]
+fn pct_join_testJoin_forFailedJoinWhenNoRowsMatchJoinCondition() {
+    run_pct_test("meta::pure::functions::relation::tests::join::testJoin_forFailedJoinWhenNoRowsMatchJoinCondition");
+}
+
+#[test]
+#[ignore = "pure-side: TDS island-grammar strips internal whitespace from unquoted cells"]
+fn pct_join_testFullJoin() {
+    run_pct_test("meta::pure::functions::relation::tests::join::testFullJoin");
+}
+
+#[test]
+#[ignore = "pure-side: TDS island-grammar strips internal whitespace from unquoted cells"]
+fn pct_join_testRightJoin() {
+    run_pct_test("meta::pure::functions::relation::tests::join::testRightJoin");
+}
+

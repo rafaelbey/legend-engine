@@ -251,3 +251,89 @@ function olap_probe::groupByMulti(): String[1]
         "#TDS\n   grp,grp2,sumVal,cnt\n   1,8,5,1\n   1,9,30,2\n   2,7,70,2\n#";
     assert_eq!(s, expected, "groupBy multiple/multiple mismatch");
 }
+
+/// Regression guard for a pure-side TDS-parser bug: a `#TDS` literal
+/// cell with internal spaces (`More George 1`) loses them during
+/// island-grammar parsing (→ `MoreGeorge1`). Independent of any
+/// relation native. #[ignore]d until legend-pure-rust preserves
+/// inter-token whitespace in unquoted TDS cells (filed in scratch_5);
+/// the `join` PCT tests are blocked on the same gap.
+#[test]
+#[ignore = "pure-side: TDS island-grammar strips internal whitespace from unquoted cells"]
+fn tds_internal_spaces_probe() {
+    let source = r"###Pure
+import meta::pure::functions::relation::*;
+
+function olap_probe::spaces(): String[1]
+{
+    #TDS
+       id, name
+       1, More George 1
+       2, David
+    #->toString()
+}";
+    let result = eval_function("tds_spaces.pure", source, &["olap_probe", "spaces"]);
+    let s = match &result {
+        Value::String(s) => s.to_string(),
+        other => panic!("{other:?}"),
+    };
+    assert!(s.contains("More George 1"), "internal spaces lost: {s}");
+}
+
+/// `join` correctness over single-word cells (independent of the TDS
+/// internal-whitespace bug that blocks the join PCT tests). Covers all
+/// four `JoinKind`s. Result = left cols ++ right cols; unmatched rows
+/// emit `null` on the other side.
+#[test]
+fn join_all_kinds_single_word() {
+    let preamble = r"###Pure
+import meta::pure::functions::relation::*;
+
+function olap_probe::doJoin(): String[1]
+{
+    let t1 = #TDS
+       id, name
+       1, a
+       2, b
+       3, c
+       4, d
+    #;
+    let t2 = #TDS
+       id2, col
+       1, x
+       1, y
+       4, z
+       6, w
+    #;
+    $t1->join($t2, JoinKind.KIND, {x,y| $x.id == $y.id2})
+       ->sort([~id->ascending(), ~col->ascending()])->toString()
+}";
+    let cases = [
+        (
+            "INNER",
+            "#TDS\n   id,name,id2,col\n   1,a,1,x\n   1,a,1,y\n   4,d,4,z\n#",
+        ),
+        (
+            "LEFT",
+            "#TDS\n   id,name,id2,col\n   1,a,1,x\n   1,a,1,y\n   2,b,null,null\n   3,c,null,null\n   4,d,4,z\n#",
+        ),
+        (
+            // id-null row sorts last (ASC NULLS LAST).
+            "RIGHT",
+            "#TDS\n   id,name,id2,col\n   1,a,1,x\n   1,a,1,y\n   4,d,4,z\n   null,null,6,w\n#",
+        ),
+        (
+            "FULL",
+            "#TDS\n   id,name,id2,col\n   1,a,1,x\n   1,a,1,y\n   2,b,null,null\n   3,c,null,null\n   4,d,4,z\n   null,null,6,w\n#",
+        ),
+    ];
+    for (kind, expected) in cases {
+        let source = preamble.replace("JoinKind.KIND", &format!("JoinKind.{kind}"));
+        let result = eval_function("join_probe.pure", &source, &["olap_probe", "doJoin"]);
+        let s = match &result {
+            Value::String(s) => s.to_string(),
+            other => panic!("expected String, got {other:?}"),
+        };
+        assert_eq!(s, expected, "join {kind} mismatch");
+    }
+}

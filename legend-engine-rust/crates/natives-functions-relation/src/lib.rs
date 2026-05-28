@@ -60,6 +60,7 @@ mod extend;
 mod extend_olap;
 mod filter;
 mod groupby;
+mod join;
 mod limit;
 mod map;
 mod ranking;
@@ -89,6 +90,7 @@ pub use groupby::{
     GroupByColSpecAgg, GroupByColSpecAggArray, GroupByColSpecArrayAgg,
     GroupByColSpecArrayAggArray,
 };
+pub use join::Join;
 pub use limit::Limit;
 pub use map::MapRelation;
 pub use ranking::{CumulativeDistribution, DenseRank, Ntile, PercentRank, Rank, RowNumber};
@@ -140,6 +142,10 @@ impl RuntimeExtension for RelationFunctionsExtension {
             Concatenate,
         );
         registry.register("filter_Relation_1__Function_1__Relation_1_", Filter);
+        registry.register(
+            "join_Relation_1__Relation_1__JoinKind_1__Function_1__Relation_1_",
+            Join,
+        );
         // groupBy — collapse to one row per group key. Four overloads
         // over {ColSpec, ColSpecArray} group cols x {AggColSpec,
         // AggColSpecArray} aggregates.
