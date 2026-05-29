@@ -108,33 +108,43 @@ public class RelationExtensionCompiled implements CompiledExtension
         return new RelationExtensionCompiled();
     }
 
+    // Codegen hook for `$row.colName` (Column-as-function application) on the
+    // engine's RowContainer-backed rows. Receiver-scoped: returns null when the
+    // receiver's static rawType is a RelationType, so legend-pure's
+    // TDSExtensionCompiled hook can resolve TDSTuple-shaped receivers instead.
+    // The CompiledExtension SPI errors if more than one extension returns
+    // non-null for the same expression, so the two hooks must stay
+    // mutually-exclusive on receiver type.
     @Override
     public Function3<CoreInstance, CoreInstance, ProcessorContext, String> getExtraFunctionGeneration()
     {
         return (CoreInstance function, CoreInstance functionExpression, ProcessorContext processorContext) ->
         {
-            if (processorContext.getSupport().instance_instanceOf(function, M3Paths.Column))
+            ProcessorSupport processorSupport = processorContext.getSupport();
+            if (!processorSupport.instance_instanceOf(function, M3Paths.Column))
             {
-                CoreInstance firstParam = Instance.getValueForMetaPropertyToManyResolved(functionExpression, M3Properties.parametersValues, processorContext.getSupport()).getFirst();
-                String processedOwnerInstance = ValueSpecificationProcessor.processValueSpecification(null, firstParam, processorContext);
-
-                ProcessorSupport processorSupport = processorContext.getSupport();
-                CoreInstance nativeFunction = Instance.getValueForMetaPropertyToOneResolved(functionExpression, M3Properties.func, processorSupport);
-                CoreInstance functionType = processorSupport.function_getFunctionType(nativeFunction);
-                CoreInstance returnGenericType = Instance.getValueForMetaPropertyToOneResolved(functionType, M3Properties.returnType, processorSupport);
-                String returnType = TypeProcessor.typeToJavaObjectSingle(returnGenericType, true, processorSupport);
-
-                String getValue = "(" + returnType + ")((org.finos.legend.pure.runtime.java.extension.external.relation.compiled.natives.shared.RowContainer)" + processedOwnerInstance + ").apply(\"" + Instance.getValueForMetaPropertyToOneResolved(function, M3Properties.name, processorContext.getSupport()).getName() + "\")";
-                if (GenericType.testContainsExtendedPrimitiveTypes(returnGenericType, processorSupport))
-                {
-                    return "(" + returnType + ")" + Cast.buildRunnableForExtendedPrimitiveType(getValue, returnGenericType, null, processorSupport) + ".value()";
-                }
-                else
-                {
-                    return getValue;
-                }
+                return null;
             }
-            return null;
+            CoreInstance firstParam = Instance.getValueForMetaPropertyToManyResolved(functionExpression, M3Properties.parametersValues, processorSupport).getFirst();
+            CoreInstance receiverGenericType = Instance.getValueForMetaPropertyToOneResolved(firstParam, M3Properties.genericType, processorSupport);
+            CoreInstance receiverRawType = (receiverGenericType == null) ? null : Instance.getValueForMetaPropertyToOneResolved(receiverGenericType, M3Properties.rawType, processorSupport);
+            if (receiverRawType != null && processorSupport.instance_instanceOf(receiverRawType, M3Paths.RelationType))
+            {
+                return null;
+            }
+            String processedOwnerInstance = ValueSpecificationProcessor.processValueSpecification(null, firstParam, processorContext);
+
+            CoreInstance nativeFunction = Instance.getValueForMetaPropertyToOneResolved(functionExpression, M3Properties.func, processorSupport);
+            CoreInstance functionType = processorSupport.function_getFunctionType(nativeFunction);
+            CoreInstance returnGenericType = Instance.getValueForMetaPropertyToOneResolved(functionType, M3Properties.returnType, processorSupport);
+            String returnType = TypeProcessor.typeToJavaObjectSingle(returnGenericType, true, processorSupport);
+
+            String getValue = "(" + returnType + ")((org.finos.legend.pure.runtime.java.extension.external.relation.compiled.natives.shared.RowContainer)" + processedOwnerInstance + ").apply(\"" + Instance.getValueForMetaPropertyToOneResolved(function, M3Properties.name, processorSupport).getName() + "\")";
+            if (GenericType.testContainsExtendedPrimitiveTypes(returnGenericType, processorSupport))
+            {
+                return "(" + returnType + ")" + Cast.buildRunnableForExtendedPrimitiveType(getValue, returnGenericType, null, processorSupport) + ".value()";
+            }
+            return getValue;
         };
     }
 

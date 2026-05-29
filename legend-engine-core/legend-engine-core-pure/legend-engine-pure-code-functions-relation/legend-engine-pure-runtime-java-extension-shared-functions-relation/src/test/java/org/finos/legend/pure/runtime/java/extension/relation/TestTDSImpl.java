@@ -19,11 +19,9 @@ import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.map.MutableMap;
 import org.finos.legend.pure.m2.inlinedsl.tds.TDSExtension;
-import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.relation.RelationType;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.relation.TDS;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.generics.GenericType;
 import org.finos.legend.pure.m3.navigation.ProcessorSupport;
-import org.finos.legend.pure.m3.navigation.relation._Column;
 import org.finos.legend.pure.m3.serialization.filesystem.repository.CodeRepository;
 import org.finos.legend.pure.m3.serialization.filesystem.repository.CodeRepositoryProviderHelper;
 import org.finos.legend.pure.m3.serialization.filesystem.usercodestorage.RepositoryCodeStorage;
@@ -58,7 +56,7 @@ public class TestTDSImpl extends TestTDS
     {
         super(ps);
         TDS<?> tds = TDSExtension.parse(csv, null, ps);
-        this.build(readCsv(tds._csv()), ((RelationType<?>) tds._classifierGenericType()._typeArguments().getFirst()._rawType())._columns().collect(_Column::getColumnType).toList(), ps);
+        this.populateFromRows(tds);
     }
 
     public TestTDSImpl(MutableList<String> columnOrdered, MutableMap<String, GenericType> pureTypesByColumn, int rows)

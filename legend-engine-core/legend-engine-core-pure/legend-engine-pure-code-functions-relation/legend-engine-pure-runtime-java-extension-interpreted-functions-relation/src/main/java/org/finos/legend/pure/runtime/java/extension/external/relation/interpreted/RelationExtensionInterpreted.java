@@ -137,20 +137,36 @@ public class RelationExtensionInterpreted extends BaseInterpretedExtension
         return new RelationExtensionInterpreted();
     }
 
+    // Dispatch hook for `$row.colName` (Column-as-function application) on the
+    // engine's TDSWithCursorCoreInstance-backed rows. Receiver-scoped: returns
+    // null when the receiver's classifierGenericType.rawType is a RelationType,
+    // so legend-pure's TDSExtensionInterpreted hook can resolve TDSTuple-shaped
+    // receivers instead. Without this scoping, both hooks fire for a TDSTuple
+    // receiver and the cast to TDSWithCursorCoreInstance throws.
     @Override
     public CoreInstance getExtraFunctionExecution(Function<?> function, ListIterable<? extends CoreInstance> params, Stack<MutableMap<String, CoreInstance>> resolvedTypeParameters, Stack<MutableMap<String, CoreInstance>> resolvedMultiplicityParameters, VariableContext variableContext, MutableStack<CoreInstance> functionExpressionCallStack, Profiler profiler, InstantiationContext instantiationContext, ExecutionSupport executionSupport, ProcessorSupport processorSupport, FunctionExecutionInterpreted interpreted)
     {
-        if (Instance.instanceOf(function, M3Paths.Column, processorSupport))
+        if (!Instance.instanceOf(function, M3Paths.Column, processorSupport))
         {
-            CoreInstance value = ((TDSWithCursorCoreInstance) params.get(0).getValueForMetaPropertyToOne("values")).getValue(function._name());
-            GenericType colType = _Column.getColumnType((Column<?, ?>) function);
-            if (Type.isExtendedPrimitiveType(colType._rawType(), processorSupport))
-            {
-                Cast.evaluateConstraints(value, colType, interpreted, instantiationContext, functionExpressionCallStack, functionExpressionCallStack.isEmpty() ? null : functionExpressionCallStack.peek().getSourceInformation(), executionSupport, processorSupport);
-            }
-
-            return value;
+            return null;
         }
-        return null;
+        CoreInstance receiver = params.get(0).getValueForMetaPropertyToOne("values");
+        if (receiver != null)
+        {
+            CoreInstance receiverCgt = receiver.getValueForMetaPropertyToOne(org.finos.legend.pure.m3.navigation.M3Properties.classifierGenericType);
+            CoreInstance receiverRawType = (receiverCgt == null) ? null : receiverCgt.getValueForMetaPropertyToOne(org.finos.legend.pure.m3.navigation.M3Properties.rawType);
+            if (receiverRawType != null && Instance.instanceOf(receiverRawType, M3Paths.RelationType, processorSupport))
+            {
+                return null;
+            }
+        }
+        CoreInstance value = ((TDSWithCursorCoreInstance) receiver).getValue(function._name());
+        GenericType colType = _Column.getColumnType((Column<?, ?>) function);
+        if (Type.isExtendedPrimitiveType(colType._rawType(), processorSupport))
+        {
+            Cast.evaluateConstraints(value, colType, interpreted, instantiationContext, functionExpressionCallStack, functionExpressionCallStack.isEmpty() ? null : functionExpressionCallStack.peek().getSourceInformation(), executionSupport, processorSupport);
+        }
+
+        return value;
     }
 }

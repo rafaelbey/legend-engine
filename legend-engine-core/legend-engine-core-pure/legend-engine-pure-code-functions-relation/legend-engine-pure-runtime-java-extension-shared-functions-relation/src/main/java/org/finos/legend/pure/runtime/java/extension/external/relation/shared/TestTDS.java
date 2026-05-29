@@ -49,6 +49,8 @@ import org.eclipse.collections.impl.tuple.Tuples;
 import org.eclipse.collections.impl.utility.ListIterate;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.function.LambdaFunction;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.multiplicity.Multiplicity;
+import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.relation.Column;
+import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.relation.RelationType;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.FunctionType;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.Type;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.generics.GenericType;
@@ -59,10 +61,12 @@ import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.valuespecificat
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.valuespecification.VariableExpressionAccessor;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.variant.Variant;
 import org.finos.legend.pure.m3.navigation.M3Paths;
+import org.finos.legend.pure.m3.navigation.M3Properties;
 import org.finos.legend.pure.m3.navigation.PackageableElement.PackageableElement;
 import org.finos.legend.pure.m3.navigation.PrimitiveUtilities;
 import org.finos.legend.pure.m3.navigation.ProcessorSupport;
 import org.finos.legend.pure.m3.navigation.function.Function;
+import org.finos.legend.pure.m3.navigation.relation._Column;
 import org.finos.legend.pure.m4.coreinstance.CoreInstance;
 import org.finos.legend.pure.m4.coreinstance.primitive.date.DateFunctions;
 import org.finos.legend.pure.m4.coreinstance.primitive.date.PureDate;
@@ -403,6 +407,128 @@ public abstract class TestTDS
         {
             throw new RuntimeException("Error parsing:\n" + csv, e);
         }
+    }
+
+    // Populate this TDS's column-major store from a `meta::pure::metamodel::relation::TDS`
+    // CoreInstance whose `rows` slot holds TDSTuple instances (the post-`csv`-removal shape).
+    // The inverse of `TDSExtension.renderCsv`: walks `rows -> TDSTuple._values()` (each value
+    // a `List<Any>` holder; empty list = null cell, one element = present cell) and unboxes
+    // each cell against its column's Pure type into a typed Java array.
+    public void populateFromRows(CoreInstance tdsInstance)
+    {
+        GenericType cgt = (GenericType) tdsInstance.getValueForMetaPropertyToOne(M3Properties.classifierGenericType);
+        RelationType<?> relType = (RelationType<?>) cgt._typeArguments().getFirst()._rawType();
+        MutableList<? extends Column<?, ?>> columns = relType._columns().toList();
+        MutableList<? extends CoreInstance> rows = (MutableList<? extends CoreInstance>) tdsInstance.getValueForMetaPropertyToMany("rows").toList();
+        int rowCount = rows.size();
+        for (int c = 0; c < columns.size(); c++)
+        {
+            Column<?, ?> col = columns.get(c);
+            String name = col._name();
+            GenericType colType = _Column.getColumnType(col);
+            Multiplicity mult = _Column.getColumnMultiplicity(col);
+            if (mult == null)
+            {
+                mult = (Multiplicity) org.finos.legend.pure.m3.navigation.multiplicity.Multiplicity.newMultiplicity(0, 1, processorSupport);
+            }
+            Object data = allocateTypedColumnArray(colType, rowCount);
+            for (int r = 0; r < rowCount; r++)
+            {
+                ListIterable<? extends CoreInstance> holders = rows.get(r).getValueForMetaPropertyToMany("values");
+                CoreInstance holder = holders.toList().get(c);
+                CoreInstance cell = holder.getValueForMetaPropertyToOne("values");
+                Array.set(data, r, unboxCell(cell, colType));
+            }
+            this.addColumn(name, colType, mult, data);
+        }
+    }
+
+    private Object allocateTypedColumnArray(GenericType colType, int rowCount)
+    {
+        Type rawType = colType == null ? null : (Type) colType._rawType();
+        if (rawType == null)
+        {
+            return new String[rowCount];
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Integer)))
+        {
+            return new Long[rowCount];
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Float)))
+        {
+            return new Double[rowCount];
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Decimal)))
+        {
+            return new BigDecimal[rowCount];
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Boolean)))
+        {
+            return new Boolean[rowCount];
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Date)))
+        {
+            return new PureDate[rowCount];
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.String)))
+        {
+            return new String[rowCount];
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Variant)))
+        {
+            return new Variant[rowCount];
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Number)))
+        {
+            return new Double[rowCount];
+        }
+        return new String[rowCount];
+    }
+
+    private Object unboxCell(CoreInstance value, GenericType colType)
+    {
+        if (value == null)
+        {
+            return null;
+        }
+        Type rawType = colType == null ? null : (Type) colType._rawType();
+        if (rawType == null)
+        {
+            return value.getName();
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Integer)))
+        {
+            return Long.valueOf(value.getName());
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Float)))
+        {
+            return Double.valueOf(value.getName());
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Decimal)))
+        {
+            return new BigDecimal(value.getName());
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Boolean)))
+        {
+            return Boolean.valueOf(value.getName());
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Date)))
+        {
+            return DateFunctions.parsePureDate(value.getName());
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.String)))
+        {
+            return value.getName();
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Variant)))
+        {
+            return VariantInstanceImpl.newVariant(value.getName(), processorSupport);
+        }
+        if (processorSupport.type_subTypeOf(rawType, processorSupport.package_getByUserPath(M3Paths.Number)))
+        {
+            return Double.valueOf(value.getName());
+        }
+        return value.getName();
     }
 
     public TestTDS join(TestTDS otherTDS)

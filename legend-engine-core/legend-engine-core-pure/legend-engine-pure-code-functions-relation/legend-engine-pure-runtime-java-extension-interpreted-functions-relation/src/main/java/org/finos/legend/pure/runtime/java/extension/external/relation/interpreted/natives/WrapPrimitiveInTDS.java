@@ -17,7 +17,6 @@ package org.finos.legend.pure.runtime.java.extension.external.relation.interpret
 import org.eclipse.collections.api.list.ListIterable;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.stack.MutableStack;
-import org.eclipse.collections.impl.factory.Lists;
 import org.finos.legend.pure.m3.compiler.Context;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.generics.GenericType;
 import org.finos.legend.pure.m3.exception.PureExecutionException;
@@ -50,7 +49,6 @@ public class WrapPrimitiveInTDS extends Shared
         GenericType genericType = (GenericType) params.get(0).getValueForMetaPropertyToOne("genericType");
         CoreInstance value = params.get(0).getValueForMetaPropertyToMany("values").getFirst();
         TDSCoreInstance tds = new TDSCoreInstance(new SingleValueTDS(value, genericType, repository, processorSupport), returnGenericType, repository, processorSupport);
-        tds.setKeyValues(Lists.mutable.with("csv"), Lists.mutable.with(repository.newStringCoreInstance("value\n" + value.getName())));
         return ValueSpecificationBootstrap.wrapValueSpecification(tds, false, processorSupport);
     }
 }

@@ -14,8 +14,6 @@
 
 package org.finos.legend.pure.runtime.java.extension.external.relation.compiled;
 
-import static org.finos.legend.pure.runtime.java.extension.external.relation.shared.TestTDS.readCsv;
-
 import java.math.BigDecimal;
 import java.util.Objects;
 
@@ -95,9 +93,16 @@ public class RelationNativeImplementation
         {
             return getTDS(((TDSRelationAccessor<?>) value)._sourceElement(), es);
         }
-        return value instanceof TDSContainer ?
-                ((TDSContainer) value).tds :
-                new TestTDSCompiled(readCsv((((CoreInstance) value).getValueForMetaPropertyToOne("csv")).getName()), ((CoreInstance) value).getValueForMetaPropertyToOne(M3Properties.classifierGenericType), ((CompiledExecutionSupport) es).getProcessorSupport());
+        if (value instanceof TDSContainer)
+        {
+            return ((TDSContainer) value).tds;
+        }
+        ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
+        CoreInstance tdsInstance = (CoreInstance) value;
+        TestTDSCompiled tds = new TestTDSCompiled(ps);
+        tds.populateFromRows(tdsInstance);
+        tds.setClassifierGenericType(tdsInstance.getValueForMetaPropertyToOne(M3Properties.classifierGenericType));
+        return tds;
     }
 
 

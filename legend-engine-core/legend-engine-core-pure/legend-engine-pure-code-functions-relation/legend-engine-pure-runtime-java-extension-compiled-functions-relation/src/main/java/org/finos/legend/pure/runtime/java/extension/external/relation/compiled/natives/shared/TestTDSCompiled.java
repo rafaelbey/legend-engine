@@ -66,6 +66,11 @@ public class TestTDSCompiled extends TestTDS
         return (GenericType) classifierGenericType;
     }
 
+    public void setClassifierGenericType(CoreInstance classifierGenericType)
+    {
+        this.classifierGenericType = classifierGenericType;
+    }
+
     @Override
     public TestTDS copy()
     {
