@@ -764,11 +764,59 @@ public class RelationNativeImplementation
         return new TDSContainer(filtered, ps);
     }
 
+    // Rows-direct: sort rows by cell values at the requested columns. Cell
+    // values come through Rows.toComparable using the column's Pure type;
+    // nulls sort last (mirrors TestTDS.sort's Comparators.safeNullsHigh).
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static <T> Relation<? extends T> sort(Relation<? extends T> rel, RichIterable<Pair<Enum, String>> collect, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        TestTDSCompiled tds1 = RelationNativeImplementation.getTDS(rel, es);
-        return new TDSContainer((TestTDSCompiled) tds1.sort(collect.collect(c -> new SortInfo(c.getTwo(), SortDirection.valueOf(c.getOne()._name()))).toList()).getOne(), ps);
+        CoreInstance tdsInstance = RelationNativeImplementation.inputAsTDS(rel, es);
+        RelationType<?> relType = Rows.relationTypeOf(tdsInstance);
+        ListIterable<? extends Column<?, ?>> cols = relType._columns().toList();
+        MutableList<SortInfo> sortInfos = collect.collect(c -> new SortInfo(c.getTwo(), SortDirection.valueOf(c.getOne()._name()))).toList();
+
+        int[] sortIdx = new int[sortInfos.size()];
+        GenericType[] sortColType = new GenericType[sortInfos.size()];
+        int[] sortDirSign = new int[sortInfos.size()];
+        for (int s = 0; s < sortInfos.size(); s++)
+        {
+            SortInfo si = sortInfos.get(s);
+            int idx = -1;
+            for (int c = 0; c < cols.size(); c++)
+            {
+                if (si.columnName.equals(cols.get(c)._name()))
+                {
+                    idx = c;
+                    break;
+                }
+            }
+            if (idx < 0)
+            {
+                throw new RuntimeException("Sort column '" + si.columnName + "' not found");
+            }
+            sortIdx[s] = idx;
+            sortColType[s] = _Column.getColumnType(cols.get(idx));
+            sortDirSign[s] = si.direction == SortDirection.DESC ? -1 : 1;
+        }
+
+        MutableList<CoreInstance> rows = Lists.mutable.<CoreInstance>withAll(Rows.rowsOf(tdsInstance));
+        rows.sortThis((a, b) ->
+        {
+            for (int s = 0; s < sortIdx.length; s++)
+            {
+                Comparable av = Rows.toComparable(Rows.cellAt(a, sortIdx[s]), sortColType[s]);
+                Comparable bv = Rows.toComparable(Rows.cellAt(b, sortIdx[s]), sortColType[s]);
+                int cmp;
+                if (av == null && bv == null) { cmp = 0; }
+                else if (av == null) { cmp = 1; }
+                else if (bv == null) { cmp = -1; }
+                else { cmp = av.compareTo(bv); }
+                if (cmp != 0) { return cmp * sortDirSign[s]; }
+            }
+            return 0;
+        });
+        return (Relation<? extends T>) Rows.newTDS(Rows.classifierGenericTypeOf(tdsInstance), rows, ps);
     }
 
     public abstract static class AggColSpecTrans

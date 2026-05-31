@@ -135,6 +135,57 @@ public final class Rows
         return out;
     }
 
+    // Convert a cell CoreInstance to a Comparable Java value for sort / distinct
+    // operations. Mirrors the unboxing rules in legend-pure's TDSTupleSupport.
+    // Null cells become null (callers handle null ordering).
+    @SuppressWarnings("rawtypes")
+    public static Comparable toComparable(CoreInstance cell, org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.generics.GenericType colType)
+    {
+        if (cell == null)
+        {
+            return null;
+        }
+        org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.Type rawType = colType == null ? null : (org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.Type) colType._rawType();
+        String name = cell.getName();
+        String typeName = rawType == null ? "String" : rawType.getName();
+        switch (typeName)
+        {
+            case "Integer":
+                return Long.parseLong(name);
+            case "Float":
+                return Double.parseDouble(name);
+            case "Decimal":
+                return new java.math.BigDecimal(name);
+            case "Number":
+                return parseNumber(name);
+            case "Boolean":
+                return Boolean.parseBoolean(name);
+            case "StrictDate":
+            case "Date":
+            case "DateTime":
+                return org.finos.legend.pure.m4.coreinstance.primitive.date.DateFunctions.parsePureDate(name);
+            case "String":
+            default:
+                return name;
+        }
+    }
+
+    private static Comparable<?> parseNumber(String literal)
+    {
+        try
+        {
+            if (literal.indexOf('.') < 0 && literal.indexOf('e') < 0 && literal.indexOf('E') < 0)
+            {
+                return Long.parseLong(literal);
+            }
+        }
+        catch (NumberFormatException ignored)
+        {
+            // fall through to double
+        }
+        return Double.parseDouble(literal);
+    }
+
     // Convert a column-major TestTDS into the new-shape CoreInstance TDS (rows
     // of TDSTuples). Used while migrating natives off TestTDS: a migrated
     // native receiving the output of a non-migrated upstream native (which
