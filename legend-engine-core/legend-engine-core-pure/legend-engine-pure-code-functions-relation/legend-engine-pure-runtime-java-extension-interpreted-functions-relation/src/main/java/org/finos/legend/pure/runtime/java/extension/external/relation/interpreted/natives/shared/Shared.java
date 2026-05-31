@@ -24,6 +24,7 @@ import org.finos.legend.pure.m3.navigation.ProcessorSupport;
 import org.finos.legend.pure.m3.navigation.generictype.GenericType;
 import org.finos.legend.pure.m4.ModelRepository;
 import org.finos.legend.pure.m4.coreinstance.CoreInstance;
+import org.finos.legend.pure.runtime.java.extension.external.relation.shared.Rows;
 import org.finos.legend.pure.runtime.java.extension.external.relation.shared.TestTDS;
 import org.finos.legend.pure.runtime.java.interpreted.FunctionExecutionInterpreted;
 import org.finos.legend.pure.runtime.java.interpreted.natives.NativeFunction;
@@ -62,6 +63,31 @@ public abstract class Shared extends NativeFunction
     public RelationType<?> getRelationType(ListIterable<? extends CoreInstance> params, int i)
     {
         return (RelationType<?>) params.get(i).getValueForMetaPropertyToOne("genericType").getValueForMetaPropertyToMany("typeArguments").getFirst().getValueForMetaPropertyToOne("rawType");
+    }
+
+    // Normalise a relation value to a new-shape `meta::pure::metamodel::relation::TDS`
+    // CoreInstance. Handles TDSRelationAccessor (recurse on sourceElement) and the
+    // legacy TDSCoreInstance wrapper (extract the TestTDS and materialise rows). Used
+    // by natives migrated off TestTDS so they can consume output produced by
+    // non-migrated upstream natives during the staged migration. Returns the input
+    // unchanged once nothing legacy is left.
+    public CoreInstance inputAsTDS(CoreInstance value, ProcessorSupport processorSupport)
+    {
+        if (Instance.instanceOf(value, "meta::pure::metamodel::relation::TDSRelationAccessor", processorSupport))
+        {
+            return inputAsTDS(value.getValueForMetaPropertyToOne("sourceElement"), processorSupport);
+        }
+        if (value instanceof TDSCoreInstance)
+        {
+            TDSCoreInstance wrapped = (TDSCoreInstance) value;
+            return Rows.fromTestTDS(wrapped.getTDS(), wrapped.getValueForMetaPropertyToOne("classifierGenericType"), processorSupport);
+        }
+        return value;
+    }
+
+    public CoreInstance inputAsTDS(ListIterable<? extends CoreInstance> params, int position, ProcessorSupport processorSupport)
+    {
+        return inputAsTDS(params.get(position).getValueForMetaPropertyToOne("values"), processorSupport);
     }
 
     public static CoreInstance getReturnGenericType(Stack<MutableMap<String, CoreInstance>> resolvedTypeParameters, Stack<MutableMap<String, CoreInstance>> resolvedMultiplicityParameters, MutableStack<CoreInstance> functionExpressionCallStack, ProcessorSupport processorSupport)

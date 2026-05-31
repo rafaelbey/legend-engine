@@ -71,6 +71,7 @@ import org.finos.legend.pure.runtime.java.extension.external.relation.compiled.n
 import org.finos.legend.pure.runtime.java.extension.external.relation.compiled.natives.shared.TDSContainer;
 import org.finos.legend.pure.runtime.java.extension.external.relation.compiled.natives.shared.TestTDSCompiled;
 import org.finos.legend.pure.runtime.java.extension.external.relation.shared.ColumnValue;
+import org.finos.legend.pure.runtime.java.extension.external.relation.shared.Rows;
 import org.finos.legend.pure.runtime.java.extension.external.relation.shared.TestTDS;
 import org.finos.legend.pure.runtime.java.extension.external.relation.shared.window.Frame;
 import org.finos.legend.pure.runtime.java.extension.external.relation.shared.window.Range;
@@ -103,6 +104,28 @@ public class RelationNativeImplementation
         tds.populateFromRows(tdsInstance);
         tds.setClassifierGenericType(tdsInstance.getValueForMetaPropertyToOne(M3Properties.classifierGenericType));
         return tds;
+    }
+
+    // Normalise a relation value to a new-shape `meta::pure::metamodel::relation::TDS`
+    // CoreInstance: unwrap TDSRelationAccessor, materialise rows from the legacy
+    // TDSContainer wrapper (extract TestTDS and rebuild rows), or return the input
+    // unchanged when it's already a new-shape TDS. Used by natives migrated off
+    // TestTDS so they can consume output produced by non-migrated upstream natives
+    // during the staged migration. The TDSContainer branch goes away once all
+    // natives are migrated.
+    public static CoreInstance inputAsTDS(Object value, ExecutionSupport es)
+    {
+        if (value instanceof TDSRelationAccessor)
+        {
+            return inputAsTDS(((TDSRelationAccessor<?>) value)._sourceElement(), es);
+        }
+        if (value instanceof TDSContainer)
+        {
+            TDSContainer container = (TDSContainer) value;
+            ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
+            return Rows.fromTestTDS(container.tds, container.tds.getClassifierGenericType(), ps);
+        }
+        return (CoreInstance) value;
     }
 
 
@@ -188,19 +211,27 @@ public class RelationNativeImplementation
         return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(rel1, es).concatenate(RelationNativeImplementation.getTDS(rel2, es)), ps);
     }
 
+    // Rows-direct implementation: iterate the input TDS's `rows : T[*]` of
+    // TDSTuples, invoke the predicate with each row (legend-pure's
+    // TDSExtensionCompiled hook resolves `$row.colName` at codegen via the
+    // TDSTuple classifier override), and emit a new-shape TDS over the kept
+    // rows. No RowContainer / TDSContainer / TestTDS involved.
+    @SuppressWarnings("unchecked")
     public static <T> Relation<? extends T> filter(Relation<? extends T> rel, Function2 pureFunction, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        TestTDSCompiled tds = RelationNativeImplementation.getTDS(rel, es);
-        MutableIntSet list = new IntHashSet();
-        for (int i = 0; i < tds.getRowCount(); i++)
+        CoreInstance tdsInstance = RelationNativeImplementation.inputAsTDS(rel, es);
+        ListIterable<? extends CoreInstance> rows = Rows.rowsOf(tdsInstance);
+        CoreInstance classifierGT = Rows.classifierGenericTypeOf(tdsInstance);
+        MutableList<CoreInstance> kept = Lists.mutable.empty();
+        for (CoreInstance row : rows)
         {
-            if (!(boolean) pureFunction.value(new RowContainer(tds, i), es))
+            if ((boolean) pureFunction.value(row, es))
             {
-                list.add(i);
+                kept.add(row);
             }
         }
-        return new TDSContainer((TestTDSCompiled) tds.drop(list), ps);
+        return (Relation<? extends T>) Rows.newTDS(classifierGT, kept, ps);
     }
 
     public static <T> T offset(Relation<? extends T> w, T r, long offset, ExecutionSupport es)

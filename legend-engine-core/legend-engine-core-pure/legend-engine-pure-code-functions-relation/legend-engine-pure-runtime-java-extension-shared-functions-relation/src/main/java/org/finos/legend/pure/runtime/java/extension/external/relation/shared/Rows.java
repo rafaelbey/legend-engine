@@ -134,4 +134,40 @@ public final class Rows
         }
         return out;
     }
+
+    // Convert a column-major TestTDS into the new-shape CoreInstance TDS (rows
+    // of TDSTuples). Used while migrating natives off TestTDS: a migrated
+    // native receiving the output of a non-migrated upstream native (which
+    // still emits TDSContainer / TDSCoreInstance wrapping a TestTDS) routes
+    // the wrapped TestTDS through here. Goes away once all natives are
+    // migrated. Box each cell to a primitive CoreInstance keyed on the
+    // column's Pure type — inverse of TestTDS.unboxCell.
+    public static CoreInstance fromTestTDS(TestTDS testTDS, CoreInstance classifierGenericType, ProcessorSupport ps)
+    {
+        org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.generics.GenericType cgt =
+                (org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.generics.GenericType) classifierGenericType;
+        RelationType<?> relType = (RelationType<?>) cgt._typeArguments().getFirst()._rawType();
+        MutableList<? extends Column<?, ?>> cols = relType._columns().toList();
+        int rowCount = (int) testTDS.getRowCount();
+        MutableList<CoreInstance> outRows = Lists.mutable.withInitialCapacity(rowCount);
+        for (int r = 0; r < rowCount; r++)
+        {
+            MutableList<CoreInstance> cells = Lists.mutable.withInitialCapacity(cols.size());
+            for (int c = 0; c < cols.size(); c++)
+            {
+                Column<?, ?> col = cols.get(c);
+                Object raw = testTDS.getValue(col._name(), r);
+                cells.add(raw == null ? null : boxCell(raw, org.finos.legend.pure.m3.navigation.relation._Column.getColumnType(col), ps));
+            }
+            outRows.add(newRow(cells, relType, ps));
+        }
+        return newTDS(classifierGenericType, outRows, ps);
+    }
+
+    private static CoreInstance boxCell(Object raw, org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.generics.GenericType colType, ProcessorSupport ps)
+    {
+        org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.Type rawType =
+                (org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.Type) colType._rawType();
+        return ps.newCoreInstance(String.valueOf(raw), rawType, null);
+    }
 }
