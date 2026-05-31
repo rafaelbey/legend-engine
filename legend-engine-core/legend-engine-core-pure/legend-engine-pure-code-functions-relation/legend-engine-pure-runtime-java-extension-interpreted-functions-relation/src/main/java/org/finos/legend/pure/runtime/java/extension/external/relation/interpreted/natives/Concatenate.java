@@ -15,8 +15,10 @@
 package org.finos.legend.pure.runtime.java.extension.external.relation.interpreted.natives;
 
 import org.eclipse.collections.api.list.ListIterable;
+import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.stack.MutableStack;
+import org.eclipse.collections.impl.factory.Lists;
 import org.finos.legend.pure.m3.compiler.Context;
 import org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.type.generics.GenericType;
 import org.finos.legend.pure.m3.exception.PureExecutionException;
@@ -26,8 +28,7 @@ import org.finos.legend.pure.m3.navigation.relation._RelationType;
 import org.finos.legend.pure.m4.ModelRepository;
 import org.finos.legend.pure.m4.coreinstance.CoreInstance;
 import org.finos.legend.pure.runtime.java.extension.external.relation.interpreted.natives.shared.Shared;
-import org.finos.legend.pure.runtime.java.extension.external.relation.interpreted.natives.shared.TDSCoreInstance;
-import org.finos.legend.pure.runtime.java.extension.external.relation.shared.TestTDS;
+import org.finos.legend.pure.runtime.java.extension.external.relation.shared.Rows;
 import org.finos.legend.pure.runtime.java.interpreted.ExecutionSupport;
 import org.finos.legend.pure.runtime.java.interpreted.FunctionExecutionInterpreted;
 import org.finos.legend.pure.runtime.java.interpreted.VariableContext;
@@ -46,10 +47,8 @@ public class Concatenate extends Shared
     @Override
     public CoreInstance execute(ListIterable<? extends CoreInstance> params, Stack<MutableMap<String, CoreInstance>> resolvedTypeParameters, Stack<MutableMap<String, CoreInstance>> resolvedMultiplicityParameters, VariableContext variableContext, MutableStack<CoreInstance> functionExpressionCallStack, Profiler profiler, InstantiationContext instantiationContext, ExecutionSupport executionSupport, Context context, ProcessorSupport processorSupport) throws PureExecutionException
     {
-        CoreInstance returnGenericType = getReturnGenericType(resolvedTypeParameters, resolvedMultiplicityParameters, functionExpressionCallStack, processorSupport);
-
-        TestTDS tds1 = getTDS(params, 0, processorSupport);
-        TestTDS tds2 = getTDS(params, 1, processorSupport);
+        CoreInstance tds1 = inputAsTDS(params, 0, processorSupport);
+        CoreInstance tds2 = inputAsTDS(params, 1, processorSupport);
 
         GenericType genericType1 = (GenericType) params.get(0).getValueForMetaPropertyToOne("genericType").getValueForMetaPropertyToMany("typeArguments").getFirst();
         GenericType genericType2 = (GenericType) params.get(1).getValueForMetaPropertyToOne("genericType").getValueForMetaPropertyToMany("typeArguments").getFirst();
@@ -59,6 +58,8 @@ public class Concatenate extends Shared
             throw new PureExecutionException("Can't concatenate the two Relations as their types are incompatible : " + _RelationType.print(genericType1, processorSupport) + " & " + _RelationType.print(genericType2, processorSupport), functionExpressionCallStack);
         }
 
-        return ValueSpecificationBootstrap.wrapValueSpecification(new TDSCoreInstance(tds1.concatenate(tds2), returnGenericType, repository, processorSupport), false, processorSupport);
+        MutableList<CoreInstance> joined = Lists.mutable.withAll(Rows.rowsOf(tds1));
+        joined.addAll(Rows.rowsOf(tds2).toList());
+        return ValueSpecificationBootstrap.wrapValueSpecification(Rows.newTDS(Rows.classifierGenericTypeOf(tds1), joined, processorSupport), false, processorSupport);
     }
 }

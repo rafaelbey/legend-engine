@@ -24,7 +24,7 @@ import org.finos.legend.pure.m3.navigation.ValueSpecificationBootstrap;
 import org.finos.legend.pure.m4.ModelRepository;
 import org.finos.legend.pure.m4.coreinstance.CoreInstance;
 import org.finos.legend.pure.runtime.java.extension.external.relation.interpreted.natives.shared.Shared;
-import org.finos.legend.pure.runtime.java.extension.external.relation.shared.TestTDS;
+import org.finos.legend.pure.runtime.java.extension.external.relation.shared.Rows;
 import org.finos.legend.pure.runtime.java.interpreted.ExecutionSupport;
 import org.finos.legend.pure.runtime.java.interpreted.FunctionExecutionInterpreted;
 import org.finos.legend.pure.runtime.java.interpreted.VariableContext;
@@ -43,7 +43,7 @@ public class Size extends Shared
     @Override
     public CoreInstance execute(ListIterable<? extends CoreInstance> params, Stack<MutableMap<String, CoreInstance>> resolvedTypeParameters, Stack<MutableMap<String, CoreInstance>> resolvedMultiplicityParameters, VariableContext variableContext, MutableStack<CoreInstance> functionExpressionCallStack, Profiler profiler, InstantiationContext instantiationContext, ExecutionSupport executionSupport, Context context, ProcessorSupport processorSupport) throws PureExecutionException
     {
-        TestTDS tds = getTDS(params, 0, processorSupport);
-        return ValueSpecificationBootstrap.wrapValueSpecification(this.repository.newIntegerCoreInstance(tds.getRowCount()), true, processorSupport);
+        CoreInstance tdsInstance = inputAsTDS(params, 0, processorSupport);
+        return ValueSpecificationBootstrap.wrapValueSpecification(this.repository.newIntegerCoreInstance((long) Rows.rowsOf(tdsInstance).size()), true, processorSupport);
     }
 }

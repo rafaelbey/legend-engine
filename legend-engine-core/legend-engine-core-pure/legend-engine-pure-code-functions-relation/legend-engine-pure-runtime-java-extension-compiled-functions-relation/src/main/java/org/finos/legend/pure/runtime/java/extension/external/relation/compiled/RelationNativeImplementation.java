@@ -82,10 +82,24 @@ import org.finos.legend.pure.runtime.java.extension.external.relation.shared.win
 
 public class RelationNativeImplementation
 {
+    // Rows-direct: build a single-row TDS<(value:T[0..1])> with one TDSTuple
+    // holding the input's first value (or absent for empty input). No
+    // SingleValueTDS / TDSContainer; downstream natives consume the new-shape
+    // TDS via inputAsTDS / Rows.rowsOf.
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static Relation<?> build(Object value, GenericType genericType, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        return new TDSContainer(new SingleValueTDS(value instanceof MutableList ? ((MutableList<?>) value).getFirst() : value, genericType, (CompiledExecutionSupport) es), ps);
+        Object raw = (value instanceof MutableList) ? ((MutableList<?>) value).getFirst() : value;
+        Type rawType = (Type) genericType._rawType();
+        CoreInstance cellValue = (raw == null) ? null : ps.newCoreInstance(String.valueOf(raw), rawType, null);
+        org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.multiplicity.Multiplicity zeroOne =
+                (org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.multiplicity.Multiplicity) org.finos.legend.pure.m3.navigation.multiplicity.Multiplicity.newMultiplicity(0, 1, ps);
+        CoreInstance col = _Column.getColumnInstance("value", false, genericType, zeroOne, null, ps);
+        CoreInstance classifierGT = Rows.newTDSClassifierGenericType(Lists.mutable.with((org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.relation.Column<?, ?>) col), ps);
+        RelationType<?> relType = (RelationType<?>) ((GenericType) classifierGT)._typeArguments().getFirst()._rawType();
+        CoreInstance row = Rows.newRow(Lists.mutable.with(cellValue), relType, ps);
+        return (Relation<?>) Rows.newTDS(classifierGT, Lists.mutable.with(row), ps);
     }
 
     public static TestTDSCompiled getTDS(Object value, ExecutionSupport es)
@@ -159,26 +173,38 @@ public class RelationNativeImplementation
 
     public static <T> Long size(Relation<? extends T> res, ExecutionSupport es)
     {
-        return RelationNativeImplementation.getTDS(res, es).getRowCount();
+        return (long) Rows.rowsOf(RelationNativeImplementation.inputAsTDS(res, es)).size();
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Relation<? extends T> limit(Relation<? extends T> rel, long size, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(rel, es).slice(0, (int) size), ps);
+        CoreInstance tdsInstance = RelationNativeImplementation.inputAsTDS(rel, es);
+        ListIterable<? extends CoreInstance> rows = Rows.rowsOf(tdsInstance);
+        int stop = Math.min((int) size, rows.size());
+        return (Relation<? extends T>) Rows.newTDS(Rows.classifierGenericTypeOf(tdsInstance), Lists.mutable.withAll(rows.toList().subList(0, stop)), ps);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Relation<? extends T> slice(Relation<? extends T> rel, long start, long stop, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(rel, es).slice((int) start, (int) stop), ps);
+        CoreInstance tdsInstance = RelationNativeImplementation.inputAsTDS(rel, es);
+        ListIterable<? extends CoreInstance> rows = Rows.rowsOf(tdsInstance);
+        int from = Math.max(0, (int) start);
+        int to = Math.min((int) stop, rows.size());
+        return (Relation<? extends T>) Rows.newTDS(Rows.classifierGenericTypeOf(tdsInstance), Lists.mutable.withAll(rows.toList().subList(from, to)), ps);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Relation<? extends T> drop(Relation<? extends T> relation, Long aLong, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        TestTDSCompiled tds = RelationNativeImplementation.getTDS(relation, es);
-        return new TDSContainer((TestTDSCompiled) tds.slice(aLong.intValue(), (int) tds.getRowCount()), ps);
+        CoreInstance tdsInstance = RelationNativeImplementation.inputAsTDS(relation, es);
+        ListIterable<? extends CoreInstance> rows = Rows.rowsOf(tdsInstance);
+        int from = Math.min(rows.size(), Math.max(0, aLong.intValue()));
+        return (Relation<? extends T>) Rows.newTDS(Rows.classifierGenericTypeOf(tdsInstance), Lists.mutable.withAll(rows.toList().subList(from, rows.size())), ps);
     }
 
     public static <T> Relation<? extends Object> rename(Relation<? extends T> r, ColSpec<?> old, ColSpec<?> aNew, ExecutionSupport es)
@@ -205,10 +231,15 @@ public class RelationNativeImplementation
         return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(r, es).select(Lists.mutable.withAll(cols._names())), ps);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Relation<? extends T> concatenate(Relation<? extends T> rel1, Relation<? extends T> rel2, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(rel1, es).concatenate(RelationNativeImplementation.getTDS(rel2, es)), ps);
+        CoreInstance tds1 = RelationNativeImplementation.inputAsTDS(rel1, es);
+        CoreInstance tds2 = RelationNativeImplementation.inputAsTDS(rel2, es);
+        MutableList<CoreInstance> joined = Lists.mutable.withAll(Rows.rowsOf(tds1));
+        joined.addAll(Rows.rowsOf(tds2).toList());
+        return (Relation<? extends T>) Rows.newTDS(Rows.classifierGenericTypeOf(tds1), joined, ps);
     }
 
     // Rows-direct implementation: iterate the input TDS's `rows : T[*]` of
