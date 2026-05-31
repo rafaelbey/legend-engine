@@ -22,6 +22,7 @@ import org.eclipse.collections.api.block.function.Function2;
 import org.eclipse.collections.api.block.function.Function3;
 import org.eclipse.collections.api.block.procedure.Procedure2;
 import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.list.ListIterable;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.set.MutableSet;
@@ -159,16 +160,87 @@ public class RelationNativeImplementation
         return list;
     }
 
+    // Rows-direct: dedup rows by all-column-cell keys, same schema out.
+    @SuppressWarnings("unchecked")
     public static <T> Relation<? extends T> distinct(Relation<? extends T> rel, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(rel, es).distinct(RelationNativeImplementation.getTDS(rel, es).getColumnNames()), ps);
+        CoreInstance tdsInstance = RelationNativeImplementation.inputAsTDS(rel, es);
+        ListIterable<? extends CoreInstance> inputRows = Rows.rowsOf(tdsInstance);
+        RelationType<?> relType = Rows.relationTypeOf(tdsInstance);
+        int colCount = relType._columns().size();
+        MutableSet<String> seen = Sets.mutable.empty();
+        MutableList<CoreInstance> outRows = Lists.mutable.empty();
+        for (CoreInstance row : inputRows)
+        {
+            StringBuilder key = new StringBuilder();
+            for (int c = 0; c < colCount; c++)
+            {
+                CoreInstance cell = Rows.cellAt(row, c);
+                key.append(cell == null ? "\0" : cell.getName()).append('\1');
+            }
+            if (seen.add(key.toString()))
+            {
+                outRows.add(row);
+            }
+        }
+        return (Relation<? extends T>) Rows.newTDS(Rows.classifierGenericTypeOf(tdsInstance), outRows, ps);
     }
 
+    // Rows-direct: dedup by the cells at the selected columns; project rows to
+    // a narrower TDSTuple shape matching Relation<X>.
+    @SuppressWarnings("unchecked")
     public static <T> Relation<? extends T> distinct(Relation<? extends T> rel, ColSpecArray<?> columns, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(rel, es).distinct((MutableList) columns._names().toList()), ps);
+        CoreInstance tdsInstance = RelationNativeImplementation.inputAsTDS(rel, es);
+        ListIterable<? extends CoreInstance> inputRows = Rows.rowsOf(tdsInstance);
+        RelationType<?> inputRelType = Rows.relationTypeOf(tdsInstance);
+        ListIterable<? extends Column<?, ?>> inputCols = inputRelType._columns().toList();
+        MutableList<String> selectedNames = Lists.mutable.<String>withAll(columns._names());
+
+        int[] selectedIdx = new int[selectedNames.size()];
+        MutableList<Column<?, ?>> selectedCols = Lists.mutable.withInitialCapacity(selectedNames.size());
+        for (int s = 0; s < selectedNames.size(); s++)
+        {
+            String name = selectedNames.get(s);
+            int idx = -1;
+            for (int c = 0; c < inputCols.size(); c++)
+            {
+                if (name.equals(inputCols.get(c)._name()))
+                {
+                    idx = c;
+                    break;
+                }
+            }
+            if (idx < 0)
+            {
+                throw new RuntimeException("Column '" + name + "' not found in input relation");
+            }
+            selectedIdx[s] = idx;
+            selectedCols.add(inputCols.get(idx));
+        }
+
+        CoreInstance classifierGT = Rows.newTDSClassifierGenericType(selectedCols, ps);
+        RelationType<?> outRelType = (RelationType<?>) ((GenericType) classifierGT)._typeArguments().getFirst()._rawType();
+        MutableSet<String> seen = Sets.mutable.empty();
+        MutableList<CoreInstance> outRows = Lists.mutable.empty();
+        for (CoreInstance row : inputRows)
+        {
+            MutableList<CoreInstance> projected = Lists.mutable.withInitialCapacity(selectedIdx.length);
+            StringBuilder key = new StringBuilder();
+            for (int i = 0; i < selectedIdx.length; i++)
+            {
+                CoreInstance cell = Rows.cellAt(row, selectedIdx[i]);
+                projected.add(cell);
+                key.append(cell == null ? "\0" : cell.getName()).append('\1');
+            }
+            if (seen.add(key.toString()))
+            {
+                outRows.add(Rows.newRow(projected, outRelType, ps));
+            }
+        }
+        return (Relation<? extends T>) Rows.newTDS(classifierGT, outRows, ps);
     }
 
     public static <T> Long size(Relation<? extends T> res, ExecutionSupport es)
@@ -207,28 +279,106 @@ public class RelationNativeImplementation
         return (Relation<? extends T>) Rows.newTDS(Rows.classifierGenericTypeOf(tdsInstance), Lists.mutable.withAll(rows.toList().subList(from, rows.size())), ps);
     }
 
+    // Rows-direct rename: rebuild each row with a new RelationType classifier
+    // override (built from the input columns with the matched name swapped),
+    // so legend-pure's `$row.colName` hook resolves the new name. Cell
+    // positions are unchanged.
+    @SuppressWarnings("unchecked")
     public static <T> Relation<? extends Object> rename(Relation<? extends T> r, ColSpec<?> old, ColSpec<?> aNew, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(r, es).rename(old._name(), aNew._name()), ps);
+        CoreInstance tdsInstance = RelationNativeImplementation.inputAsTDS(r, es);
+        RelationType<?> inputRelType = Rows.relationTypeOf(tdsInstance);
+        ListIterable<? extends Column<?, ?>> inputCols = inputRelType._columns().toList();
+        org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.multiplicity.Multiplicity oneOne =
+                (org.finos.legend.pure.m3.coreinstance.meta.pure.metamodel.multiplicity.Multiplicity) org.finos.legend.pure.m3.navigation.multiplicity.Multiplicity.newMultiplicity(1, 1, ps);
+        MutableList<Column<?, ?>> outCols = Lists.mutable.empty();
+        for (Column<?, ?> c : inputCols)
+        {
+            if (c._name().equals(old._name()))
+            {
+                outCols.add((Column<?, ?>) _Column.getColumnInstance(aNew._name(), false, _Column.getColumnType(c), oneOne, null, ps));
+            }
+            else
+            {
+                outCols.add(c);
+            }
+        }
+        CoreInstance classifierGT = Rows.newTDSClassifierGenericType(outCols, ps);
+        RelationType<?> outRelType = (RelationType<?>) ((GenericType) classifierGT)._typeArguments().getFirst()._rawType();
+        int colCount = outRelType._columns().size();
+        MutableList<CoreInstance> outRows = Lists.mutable.empty();
+        for (CoreInstance row : Rows.rowsOf(tdsInstance))
+        {
+            MutableList<CoreInstance> cells = Lists.mutable.withInitialCapacity(colCount);
+            for (int c = 0; c < colCount; c++)
+            {
+                cells.add(Rows.cellAt(row, c));
+            }
+            outRows.add(Rows.newRow(cells, outRelType, ps));
+        }
+        return (Relation<?>) Rows.newTDS(classifierGT, outRows, ps);
     }
 
+    // Rows-direct: project each row's cells to the selected columns.
     public static <T> Relation<? extends Object> select(Relation<? extends T> r, ExecutionSupport es)
     {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(r, es).select(Lists.mutable.withAll(RelationNativeImplementation.getTDS(r, es).getColumnNames())), ps);
+        CoreInstance tdsInstance = RelationNativeImplementation.inputAsTDS(r, es);
+        return (Relation<?>) tdsInstance; // pass-through: no projection requested
     }
 
     public static <T> Relation<? extends Object> select(Relation<? extends T> r, ColSpec<?> col, ExecutionSupport es)
     {
-        ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(r, es).select(Lists.mutable.with(col._name())), ps);
+        return selectByNames(r, Lists.mutable.with(col._name()), es);
     }
 
     public static <T> Relation<? extends Object> select(Relation<? extends T> r, ColSpecArray<?> cols, ExecutionSupport es)
     {
+        return selectByNames(r, Lists.mutable.<String>withAll(cols._names()), es);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Relation<? extends Object> selectByNames(Relation<? extends T> r, MutableList<String> ids, ExecutionSupport es)
+    {
         ProcessorSupport ps = ((CompiledExecutionSupport) es).getProcessorSupport();
-        return new TDSContainer((TestTDSCompiled) RelationNativeImplementation.getTDS(r, es).select(Lists.mutable.withAll(cols._names())), ps);
+        CoreInstance tdsInstance = RelationNativeImplementation.inputAsTDS(r, es);
+        RelationType<?> inputRelType = Rows.relationTypeOf(tdsInstance);
+        ListIterable<? extends Column<?, ?>> inputCols = inputRelType._columns().toList();
+        int[] selectedIdx = new int[ids.size()];
+        MutableList<Column<?, ?>> selectedCols = Lists.mutable.empty();
+        for (int s = 0; s < ids.size(); s++)
+        {
+            String name = ids.get(s);
+            int idx = -1;
+            for (int c = 0; c < inputCols.size(); c++)
+            {
+                if (name.equals(inputCols.get(c)._name()))
+                {
+                    idx = c;
+                    break;
+                }
+            }
+            if (idx < 0)
+            {
+                throw new RuntimeException("Column '" + name + "' not found in input relation");
+            }
+            selectedIdx[s] = idx;
+            selectedCols.add(inputCols.get(idx));
+        }
+        CoreInstance classifierGT = Rows.newTDSClassifierGenericType(selectedCols, ps);
+        RelationType<?> outRelType = (RelationType<?>) ((GenericType) classifierGT)._typeArguments().getFirst()._rawType();
+        MutableList<CoreInstance> outRows = Lists.mutable.empty();
+        for (CoreInstance row : Rows.rowsOf(tdsInstance))
+        {
+            MutableList<CoreInstance> projected = Lists.mutable.withInitialCapacity(selectedIdx.length);
+            for (int i = 0; i < selectedIdx.length; i++)
+            {
+                projected.add(Rows.cellAt(row, selectedIdx[i]));
+            }
+            outRows.add(Rows.newRow(projected, outRelType, ps));
+        }
+        return (Relation<?>) Rows.newTDS(classifierGT, outRows, ps);
     }
 
     @SuppressWarnings("unchecked")
